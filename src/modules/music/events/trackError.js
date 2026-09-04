@@ -1,7 +1,7 @@
 import { createLogger } from "../../../core/logger.js";
 import { info, warn } from "../lib/embeds.js";
 import { findFallbackTrack } from "../lib/fallback.js";
-import { sourceLabel, trackLink } from "../lib/format.js";
+import { trackLink } from "../lib/format.js";
 
 const log = createLogger("track");
 
@@ -26,9 +26,7 @@ export default {
       await notify(
         client,
         player,
-        info(
-          `${trackLink(track)} would not play, so I am playing it from **${sourceLabel(replacement.info.sourceName)}** instead.`,
-        ),
+        info(`That upload of ${trackLink(track)} was broken, so I am trying another one.`),
       );
       return;
     }

@@ -71,8 +71,16 @@ explains it and asks you to search by name instead, which finds the same song.
 
 ## Audio quality
 
-- **Lavalink is tuned for it** - `opusEncodingQuality: 10`, `resamplingQuality:
-  HIGH`, a 400 ms NAS buffer and a 5 s frame buffer to ride out GC pauses.
+- **Lavalink is tuned for it** - `opusEncodingQuality: 10` and
+  `resamplingQuality: HIGH`.
+- **Ten seconds of audio is prepared ahead of playback**, so a network hiccup
+  or a garbage-collection pause does not turn into a dropout. Worth being clear
+  about what this is: buffering cannot add detail that is not in the source, so
+  it does not raise quality. It removes stutter, which is what usually gets
+  mistaken for poor quality. Tune it with `LAVALINK_FRAME_BUFFER_MS`.
+- **A broken upload is retried, not skipped.** SoundCloud serves some tracks
+  only as HLS, which Lavaplayer cannot read. Rather than giving up, the bot
+  looks for another upload of the same song.
 - **Headroom instead of clipping.** The bot plays a little below the volume it
   displays (`VOLUME_DECREMENTER`), so loud masters have room to breathe.
 - **No audio effects.** There is no equaliser or filter command, so nothing ever
@@ -256,6 +264,7 @@ worth knowing about:
 | `DEFAULT_SEARCH_PLATFORM` | `scsearch` | Where bare song titles are searched. |
 | `AUTOPLAY_DEFAULT` | `true` | Keep playing similar songs when the queue empties. |
 | `PLAY_ASKS_TO_CHOOSE` | `true` | Show the results and let the user pick. |
+| `LAVALINK_FRAME_BUFFER_MS` | `10000` | Audio prepared ahead, in ms. Raise if playback breaks up. |
 | `FALLBACK_SEARCH_PLATFORM` | `scsearch` | Where to retry a song that will not play. Empty disables it. |
 | `LEAVE_ON_END_MS` | `120000` | Leave this long after the queue empties (`0` = stay). |
 | `LEAVE_ON_EMPTY_MS` | `60000` | Leave this long after the channel empties (`0` = stay). |

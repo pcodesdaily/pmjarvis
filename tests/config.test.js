@@ -43,8 +43,9 @@ describe("Lavalink configuration", () => {
     const server = lavalinkYml.lavalink.server;
     assert.equal(server.opusEncodingQuality, 10);
     assert.equal(server.resamplingQuality, "HIGH");
-    assert.equal(server.bufferDurationMs, 400);
-    assert.equal(server.frameBufferDurationMs, 5000);
+    // These are env placeholders now, so check the defaults baked into them.
+    assert.match(String(server.bufferDurationMs), /LAVALINK_BUFFER_MS:500/);
+    assert.match(String(server.frameBufferDurationMs), /LAVALINK_FRAME_BUFFER_MS:10000/);
     assert.equal(server.useSeekGhosting, true);
   });
 

@@ -25,6 +25,9 @@ services:
       _JAVA_OPTIONS: -Xmx${LAVALINK_XMX:-450m} -XX:+UseSerialGC
       SERVER_PORT: 2333
       LAVALINK_PASSWORD: ${LAVALINK_PASSWORD:-youshallnotpass}
+      # How far ahead audio is buffered. Higher rides out network hiccups.
+      LAVALINK_BUFFER_MS: ${LAVALINK_BUFFER_MS:-500}
+      LAVALINK_FRAME_BUFFER_MS: ${LAVALINK_FRAME_BUFFER_MS:-10000}
     volumes:
       - ./lavalink/application.yml:/opt/Lavalink/application.yml:ro
       # No volume on /opt/Lavalink/plugins on purpose. Lavalink runs as a

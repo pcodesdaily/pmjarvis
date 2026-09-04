@@ -47,9 +47,16 @@ lavalink:
     opusEncodingQuality: 10
     # HIGH resampling avoids the muddiness you get from LOW on 48kHz sources.
     resamplingQuality: HIGH
-    # Bigger buffers ride out GC pauses and network hiccups without stuttering.
-    bufferDurationMs: 400
-    frameBufferDurationMs: 5000
+    # How far ahead audio is prepared. This does NOT make the audio higher
+    # quality, since quality is fixed by the source and the Opus encoder. What
+    # it does is stop stutters and dropouts, which is what people usually mean
+    # when they say a stream sounds bad.
+    #   bufferDurationMs      the native send buffer, absorbs GC pauses
+    #   frameBufferDurationMs how much decoded audio is held ahead of playback
+    # 10 seconds of headroom costs a few hundred KB per player and rides out
+    # almost any network hiccup. Going much higher makes skipping feel sluggish.
+    bufferDurationMs: ${LAVALINK_BUFFER_MS:500}
+    frameBufferDurationMs: ${LAVALINK_FRAME_BUFFER_MS:10000}
     # Leave false unless you are very memory constrained; true trades a little
     # compatibility for fewer allocations.
     nonAllocatingFrameBuffer: false
