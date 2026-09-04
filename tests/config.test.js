@@ -67,6 +67,21 @@ describe("Lavalink configuration", () => {
     assert.ok(clients.some((client) => opusCapable.includes(client)), "at least one Opus client is required");
   });
 
+  it("keeps the only OAuth-capable client whenever sign-in can be enabled", () => {
+    // TV is the sole client youtube-source can drive with OAuth. Without it,
+    // YOUTUBE_OAUTH_ENABLED=true logs "no OAuth-compatible clients" and
+    // playback still fails with "This video requires login" on a VPS.
+    assert.ok(
+      lavalinkYml.plugins.youtube.clients.includes("TV"),
+      "TV must stay in the client list or OAuth sign-in does nothing",
+    );
+    assert.ok(lavalinkYml.plugins.youtube.oauth, "the oauth block must exist");
+  });
+
+  it("keeps MUSIC, which is what powers ytmsearch", () => {
+    assert.ok(lavalinkYml.plugins.youtube.clients.includes("MUSIC"));
+  });
+
   it("carries exactly one plugin — the YouTube source", () => {
     const dependencies = lavalinkYml.lavalink.plugins.map((plugin) => plugin.dependency);
     assert.deepEqual(dependencies, ["dev.lavalink.youtube:youtube-plugin:1.18.2"]);
