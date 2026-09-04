@@ -16,17 +16,14 @@ services:
     container_name: pmjarvis-lavalink
     restart: unless-stopped
     # A hard ceiling so a runaway JVM cannot take the whole VPS with it.
-    mem_limit: ${LAVALINK_MEM_LIMIT:-700m}
+    mem_limit: ${LAVALINK_MEM_LIMIT:-900m}
     environment:
-      # SerialGC has a far smaller footprint than G1 at these heap sizes, and a
-      # music server does no allocation-heavy work. MaxMetaspaceSize keeps the
-      # off-heap side from creeping up over long uptimes.
-      _JAVA_OPTIONS: >-
-        -Xmx${LAVALINK_XMX:-400m}
-        -XX:+UseSerialGC
-        -XX:MaxMetaspaceSize=128m
-        -Xss512k
-        -XX:+ExitOnOutOfMemoryError
+      # SerialGC is a real saving at this heap size and a music server does no
+      # allocation-heavy work, so it stays. Metaspace and thread-stack limits do
+      # NOT belong here: Spring Boot plus Lavaplayer plus the YouTube plugin need
+      # well over 128 MB of metaspace, and capping it made the JVM die during
+      # startup. Let the JVM size those itself.
+      _JAVA_OPTIONS: -Xmx${LAVALINK_XMX:-450m} -XX:+UseSerialGC
       SERVER_PORT: 2333
       LAVALINK_PASSWORD: ${LAVALINK_PASSWORD:-youshallnotpass}
       # Optional YouTube hardening, consumed by lavalink/application.yml.

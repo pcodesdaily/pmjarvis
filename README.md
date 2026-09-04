@@ -107,7 +107,9 @@ What was done to keep it small:
   without bound.
 - **Tests and docs never enter the image**, via `.dockerignore`.
 
-Roughly **550 MB of disk** and **~700 MB of RAM** in total. Reclaim build
+Roughly **550 MB of disk** and **~900 MB of RAM** in total. Lavalink is a JVM;
+starving it of metaspace or thread stack makes it fail to boot, so only the heap
+and the garbage collector are tuned. Reclaim build
 leftovers at any time with:
 
 ```bash
@@ -117,7 +119,7 @@ docker image prune -f && docker builder prune -f
 ## Requirements
 
 - A VPS with Docker and the Compose plugin (Hostinger's Docker Manager is fine)
-- **~550 MB of disk** and **~700 MB of RAM** (see [Footprint](#footprint))
+- **~550 MB of disk** and **~900 MB of RAM** (see [Footprint](#footprint))
 - A Discord application with a bot user
 
 ## Setting up the Discord application
