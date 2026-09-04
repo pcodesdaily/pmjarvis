@@ -318,26 +318,42 @@ enable it, set `ENABLE_MESSAGE_COMMANDS=false` and use slash commands only.
 **Text commands are ignored.** Same intent as above, and make sure
 `ENABLE_MESSAGE_COMMANDS=true`.
 
-**Songs are found but will not play.** The Lavalink log will say
-`This video requires login`. YouTube blocks datacentre IPs, so a VPS almost
-always needs the bot signed in. Use a **throwaway Google account**, never your
-main one:
+**Songs are found but will not play.** Check `docker compose logs lavalink`.
+YouTube blocks datacentre IPs, and a VPS usually needs both of the steps below.
+Search keeps working throughout, because search and playback hit different
+endpoints. Use a **throwaway Google account**, never your main one.
+
+*Step 1, sign in.* Fixes `This video requires login`:
 
 ```bash
-sed -i 's/^YOUTUBE_OAUTH_ENABLED=.*/YOUTUBE_OAUTH_ENABLED=true/' .env && docker compose up -d lavalink
+sed -i 's/^YOUTUBE_OAUTH_ENABLED=.*/YOUTUBE_OAUTH_ENABLED=true/' .env && docker compose up -d --force-recreate lavalink
 ```
 
+Watch `docker compose logs -f lavalink` for a link and a code, approve it at
+https://www.google.com/device, then save the token it prints so the sign-in
+survives a rebuild:
+
 ```bash
-docker compose logs -f lavalink | grep -iA3 "oauth\|device"
+RT=$(docker compose logs lavalink | grep -oE 'reused\. \([^)]+\)' | tail -1 | sed -E 's/.*\((.*)\)//'); sed -i "s|^YOUTUBE_REFRESH_TOKEN=.*|YOUTUBE_REFRESH_TOKEN=$RT|" .env; unset RT; docker compose up -d --force-recreate lavalink
 ```
 
-Lavalink prints a link and a short code. Open the link, enter the code, approve
-with the throwaway account. Playback works immediately after that.
-
-The log then prints a refresh token. Save it so the sign-in survives a rebuild:
+*Step 2, proof of origin.* Fixes `Sign in to confirm you're not a bot`. The
+token is tied to the IP that made it, so **generate it on the VPS**:
 
 ```bash
-read -rsp "Refresh token: " RT; echo; sed -i "s|^YOUTUBE_REFRESH_TOKEN=.*|YOUTUBE_REFRESH_TOKEN=$RT|" .env; unset RT; docker compose up -d lavalink
+docker run --rm quay.io/invidious/youtube-trusted-session-generator
+```
+
+Put the two values it prints into `.env` as `YOUTUBE_PO_TOKEN` and
+`YOUTUBE_VISITOR_DATA`, then `docker compose up -d --force-recreate lavalink`.
+These expire after a while; rerun the generator when playback starts failing
+again.
+
+*If YouTube stays hostile*, SoundCloud needs none of this and works
+immediately:
+
+```bash
+sed -i 's/^DEFAULT_SEARCH_PLATFORM=.*/DEFAULT_SEARCH_PLATFORM=scsearch/' .env && docker compose up -d bot
 ```
 
 **Audio sounds thin or muffled.** Check the voice channel's bitrate — Discord
