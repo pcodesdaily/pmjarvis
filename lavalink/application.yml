@@ -1,0 +1,108 @@
+# Lavalink v4 audio server configuration.
+# Values written as ${NAME:default} are filled in from the container environment,
+# so secrets live in .env and never in this file.
+
+server:
+  port: 2333
+  address: 0.0.0.0
+  http2:
+    enabled: false
+
+lavalink:
+  pluginsDir: "./plugins"
+  plugins:
+    # The only plugin this build needs. The deprecated built-in YouTube source
+    # is replaced by this one, and it is where audio quality comes from.
+    - dependency: "dev.lavalink.youtube:youtube-plugin:1.18.2"
+      snapshot: false
+
+  server:
+    password: "${LAVALINK_PASSWORD:youshallnotpass}"
+
+    sources:
+      # false: the youtube-plugin above replaces the built-in source.
+      youtube: false
+      bandcamp: true
+      soundcloud: true
+      twitch: true
+      vimeo: true
+      nico: true
+      http: true
+      local: false
+
+    filters:
+      volume: true
+      equalizer: true
+      karaoke: true
+      timescale: true
+      tremolo: true
+      vibrato: true
+      distortion: true
+      rotation: true
+      channelMix: true
+      lowPass: true
+
+    # ---- Audio quality -------------------------------------------------
+    # 10 = best Opus encoder quality. Costs a little CPU, worth it.
+    opusEncodingQuality: 10
+    # HIGH resampling avoids the muddiness you get from LOW on 48kHz sources.
+    resamplingQuality: HIGH
+    # Bigger buffers ride out GC pauses and network hiccups without stuttering.
+    bufferDurationMs: 400
+    frameBufferDurationMs: 5000
+    # Leave false unless you are very memory constrained; true trades a little
+    # compatibility for fewer allocations.
+    nonAllocatingFrameBuffer: false
+    trackStuckThresholdMs: 10000
+    useSeekGhosting: true
+    # --------------------------------------------------------------------
+
+    playerUpdateInterval: 5
+    youtubePlaylistLoadLimit: 20
+    youtubeSearchEnabled: true
+    soundcloudSearchEnabled: true
+    gc-warnings: true
+
+plugins:
+  youtube:
+    enabled: true
+    allowSearch: true
+    allowDirectVideoIds: true
+    allowDirectPlaylistIds: true
+    # Order matters: the first client that can serve a track wins.
+    # MUSIC gives the best matches for "play <song title>"; ANDROID_VR and WEB
+    # return Opus streams, which Discord can pass through without re-encoding.
+    clients:
+      - MUSIC
+      - ANDROID_VR
+      - WEB
+      - WEBEMBEDDED
+      - TV
+    # Optional. Signing in with a throwaway Google account raises rate limits and
+    # unlocks age-restricted tracks. Leave empty to run fully anonymously.
+    oauth:
+      enabled: ${YOUTUBE_OAUTH_ENABLED:false}
+      refreshToken: "${YOUTUBE_REFRESH_TOKEN:}"
+      skipInitialization: ${YOUTUBE_OAUTH_SKIP_INIT:false}
+    # Optional proof-of-origin token; only needed if YouTube starts challenging
+    # your VPS IP. See the youtube-source README for how to generate one.
+    pot:
+      token: "${YOUTUBE_PO_TOKEN:}"
+      visitorData: "${YOUTUBE_VISITOR_DATA:}"
+
+metrics:
+  prometheus:
+    enabled: false
+
+sentry:
+  dsn: ""
+
+logging:
+  # No `file:` section on purpose. Docker captures stdout already, so writing
+  # rotating log files as well just consumed disk. Read them with
+  # `docker compose logs lavalink`.
+  level:
+    root: INFO
+    lavalink: INFO
+  request:
+    enabled: false

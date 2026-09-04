@@ -1,0 +1,91 @@
+# PMJARVIS — Discord music bot + its own Lavalink audio server.
+# Deploy on a VPS with:  docker compose up -d --build
+#
+# Only the bot talks to Lavalink, over the private `pmjarvis` network, so no
+# audio port is ever exposed to the internet.
+#
+# Disk footprint once running is roughly:
+#   lavalink image  ~380 MB   (a JVM; this is the floor for Lavalink)
+#   bot image       ~150 MB   (mostly the Node runtime itself)
+#   plugin volume    ~2 MB    (one plugin: the YouTube source)
+#   container logs  ≤ 20 MB   (capped below)
+
+services:
+  lavalink:
+    image: ghcr.io/lavalink-devs/lavalink:4-alpine
+    container_name: pmjarvis-lavalink
+    restart: unless-stopped
+    # A hard ceiling so a runaway JVM cannot take the whole VPS with it.
+    mem_limit: ${LAVALINK_MEM_LIMIT:-700m}
+    environment:
+      # SerialGC has a far smaller footprint than G1 at these heap sizes, and a
+      # music server does no allocation-heavy work. MaxMetaspaceSize keeps the
+      # off-heap side from creeping up over long uptimes.
+      _JAVA_OPTIONS: >-
+        -Xmx${LAVALINK_XMX:-400m}
+        -XX:+UseSerialGC
+        -XX:MaxMetaspaceSize=128m
+        -Xss512k
+        -XX:+ExitOnOutOfMemoryError
+      SERVER_PORT: 2333
+      LAVALINK_PASSWORD: ${LAVALINK_PASSWORD:-youshallnotpass}
+      # Optional YouTube hardening, consumed by lavalink/application.yml.
+      YOUTUBE_OAUTH_ENABLED: ${YOUTUBE_OAUTH_ENABLED:-false}
+      YOUTUBE_REFRESH_TOKEN: ${YOUTUBE_REFRESH_TOKEN:-}
+      YOUTUBE_OAUTH_SKIP_INIT: ${YOUTUBE_OAUTH_SKIP_INIT:-false}
+      YOUTUBE_PO_TOKEN: ${YOUTUBE_PO_TOKEN:-}
+      YOUTUBE_VISITOR_DATA: ${YOUTUBE_VISITOR_DATA:-}
+    volumes:
+      - ./lavalink/application.yml:/opt/Lavalink/application.yml:ro
+      # The plugin jar is downloaded once and reused across restarts (~2 MB).
+      - lavalink-plugins:/opt/Lavalink/plugins
+    networks:
+      - pmjarvis
+    healthcheck:
+      # /version needs no auth, so it is a clean readiness probe.
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:2333/version || exit 1"]
+      interval: 15s
+      timeout: 5s
+      # Generous: the first boot downloads the plugin jars.
+      start_period: 180s
+      retries: 10
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: pmjarvis-bot:latest
+    container_name: pmjarvis-bot
+    restart: unless-stopped
+    mem_limit: ${BOT_MEM_LIMIT:-256m}
+    depends_on:
+      lavalink:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      # Inside the compose network Lavalink is reachable by service name.
+      LAVALINK_HOST: lavalink
+      LAVALINK_PORT: 2333
+      LAVALINK_SECURE: "false"
+      LAVALINK_PASSWORD: ${LAVALINK_PASSWORD:-youshallnotpass}
+      TZ: ${TZ:-UTC}
+    networks:
+      - pmjarvis
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+networks:
+  pmjarvis:
+    driver: bridge
+
+volumes:
+  lavalink-plugins:

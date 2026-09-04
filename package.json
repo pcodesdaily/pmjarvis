@@ -1,0 +1,27 @@
+{
+  "name": "pmjarvis",
+  "version": "1.0.0",
+  "description": "PMJARVIS - a free, unlimited, high-quality Discord music bot with a modular feature system.",
+  "type": "module",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=20.18.0"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/index.js",
+    "dev": "node --watch --env-file-if-exists=.env src/index.js",
+    "deploy": "node --env-file-if-exists=.env src/core/deploy.js",
+    "check": "node --check src/index.js",
+    "test": "node --test \"tests/*.test.js\"",
+    "test:watch": "node --test --watch \"tests/*.test.js\""
+  },
+  "dependencies": {
+    "discord.js": "^14.27.0",
+    "lavalink-client": "^2.11.0"
+  },
+  "license": "MIT",
+  "private": true,
+  "devDependencies": {
+    "yaml": "^2.9.0"
+  }
+}

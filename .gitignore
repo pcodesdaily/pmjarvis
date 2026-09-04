@@ -1,0 +1,10 @@
+node_modules/
+.env
+.env.local
+logs/
+*.log
+lavalink/plugins/
+lavalink/logs/
+.DS_Store
+.vscode/
+.idea/

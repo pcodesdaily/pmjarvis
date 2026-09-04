@@ -1,0 +1,8 @@
+# The repo is edited on Windows but runs in Linux containers. Normalise every
+# text file to LF in the repository so the Dockerfile and shell commands inside
+# the image are never handed CRLF line endings.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary

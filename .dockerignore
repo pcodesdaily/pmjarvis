@@ -1,0 +1,17 @@
+# Keep the build context tiny — everything here is either rebuilt inside the
+# image or never needed at runtime.
+node_modules
+npm-debug.log*
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+tests
+*.md
+logs
+lavalink
+.vscode
+.idea
+Dockerfile
+docker-compose.yml
