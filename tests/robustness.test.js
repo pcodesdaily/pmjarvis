@@ -298,6 +298,11 @@ describe("formatting helpers", () => {
   it("escapes markdown and truncates", () => {
     assert.equal(escapeMd("a*b"), "a\\*b");
     assert.equal(escapeMd(null), "");
+    // Parentheses must be left alone. Discord prints a backslash before one
+    // literally, which showed up in titles like "Janiye \(from the Film\)".
+    assert.equal(escapeMd("Janiye (feat. Rashmeet Kaur)"), "Janiye (feat. Rashmeet Kaur)");
+    // Brackets stay escaped: an unescaped ] would end a [link](url) early.
+    assert.equal(escapeMd("Song [Remix]"), "Song \\[Remix\\]");
     assert.equal(truncate("abcdef", 4), "abc…");
     assert.equal(truncate("ab", 10), "ab");
   });

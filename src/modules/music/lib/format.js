@@ -60,7 +60,13 @@ export function truncate(text, max = 60) {
 }
 
 /** Escapes markdown so track titles can't break the embed layout. */
-export const escapeMd = (text) => String(text ?? "").replace(/([*_`~\\|[\]()])/g, "\\$1");
+/**
+ * Escapes only the characters Discord actually treats as formatting, plus the
+ * brackets that would end a [link](url) early. Parentheses are NOT escaped:
+ * Discord renders a backslash before one literally, so escaping them printed
+ * visible slashes in song titles like "Janiye \(from the Netflix Film\)".
+ */
+export const escapeMd = (text) => String(text ?? "").replace(/([*_`~\\|[\]])/g, "\\$1");
 
 export function trackLink(track, max = 55) {
   const title = escapeMd(truncate(track?.info?.title ?? "Unknown track", max));
