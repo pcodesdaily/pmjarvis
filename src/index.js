@@ -5,6 +5,7 @@ import BotClient from "./core/client.js";
 import { createLavalink } from "./core/lavalink.js";
 import { loadModules } from "./core/loader.js";
 import logger from "./core/logger.js";
+import { explainStartupError } from "./core/startup-errors.js";
 
 const modulesDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "modules");
 
@@ -46,7 +47,10 @@ function registerShutdown(client) {
   process.on("uncaughtException", (error) => logger.error("Uncaught exception:", error));
 }
 
+
 main().catch((error) => {
-  logger.error("Failed to start:", error);
+  const explanation = explainStartupError(error);
+  if (explanation) logger.error(`Could not start.\n\n${explanation}\n`);
+  else logger.error("Failed to start:", error);
   process.exit(1);
 });

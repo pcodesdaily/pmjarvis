@@ -211,7 +211,7 @@ Before you invite the bot anywhere, run:
 npm test
 ```
 
-189 tests cover every command, both invocation paths, and the failure modes that
+194 tests cover every command, both invocation paths, and the failure modes that
 would otherwise show up as a broken bot in a live server. They are not shallow
 mocks: the real `lavalink-client` `Player` and `Queue` run, and so do the real
 module loader, command router and event handlers. Only the Discord gateway and
@@ -309,8 +309,14 @@ bot was invited with the `applications.commands` scope.
 **"The audio server is still starting up."** Lavalink has not finished booting.
 Run `docker compose logs lavalink`; the first run downloads the plugin jar.
 
-**Text commands are ignored.** Enable the Message Content Intent in the Developer
-Portal, and make sure `ENABLE_MESSAGE_COMMANDS=true`.
+**The bot exits with "Used disallowed intents".** The Message Content intent is
+off. Go to https://discord.com/developers/applications, pick your app, open
+**Bot**, scroll to *Privileged Gateway Intents*, enable **MESSAGE CONTENT
+INTENT** and save. Then `docker compose restart bot`. If you would rather not
+enable it, set `ENABLE_MESSAGE_COMMANDS=false` and use slash commands only.
+
+**Text commands are ignored.** Same intent as above, and make sure
+`ENABLE_MESSAGE_COMMANDS=true`.
 
 **YouTube playback starts failing.** Datacentre IPs get rate-limited eventually.
 Set `YOUTUBE_OAUTH_ENABLED=true` and follow the

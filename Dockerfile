@@ -42,6 +42,6 @@ COPY src ./src
 USER node
 
 ENTRYPOINT ["/sbin/tini", "--"]
-# --env-file-if-exists replaces the dotenv dependency. Compose injects the real
-# environment anyway; this only matters when running the image standalone.
-CMD ["node", "--env-file-if-exists=.env", "src/index.js"]
+# No --env-file here: compose injects the environment directly, and the flag
+# printed a misleading ".env not found" line on every start.
+CMD ["node", "src/index.js"]
