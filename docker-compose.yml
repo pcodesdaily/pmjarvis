@@ -41,13 +41,18 @@ services:
     networks:
       - pmjarvis
     healthcheck:
-      # /version needs no auth, so it is a clean readiness probe.
-      test: ["CMD-SHELL", "wget -q -O - http://localhost:2333/version || exit 1"]
+      # /v4/info is the documented endpoint and it requires the Authorization
+      # header, which the container already has in its environment. An
+      # unauthenticated probe gets a 401 and wget then exits non-zero, which is
+      # what made this report unhealthy forever.
+      test:
+        - CMD-SHELL
+        - 'wget -q -O /dev/null --header="Authorization: $$LAVALINK_PASSWORD" http://127.0.0.1:2333/v4/info || exit 1'
       interval: 15s
       timeout: 5s
-      # Generous: the first boot downloads the plugin jars.
-      start_period: 180s
-      retries: 10
+      # Generous: the first boot downloads the plugin jar.
+      start_period: 120s
+      retries: 5
     logging:
       driver: json-file
       options:
@@ -63,8 +68,12 @@ services:
     restart: unless-stopped
     mem_limit: ${BOT_MEM_LIMIT:-256m}
     depends_on:
+      # service_started, not service_healthy. lavalink-client already retries
+      # the node connection (20 attempts, 10s apart), so the bot recovers on its
+      # own once Lavalink finishes booting. Gating on health meant one wrong
+      # probe stopped the whole stack from coming up.
       lavalink:
-        condition: service_healthy
+        condition: service_started
     env_file:
       - .env
     environment:

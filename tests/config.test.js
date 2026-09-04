@@ -126,9 +126,19 @@ describe("environment wiring", () => {
     assert.equal(compose.services.bot.environment.LAVALINK_HOST, "lavalink");
   });
 
-  it("waits for Lavalink to be healthy before starting the bot", () => {
-    assert.equal(compose.services.bot.depends_on.lavalink.condition, "service_healthy");
-    assert.ok(compose.services.lavalink.healthcheck.test.join(" ").includes("/version"));
+  it("starts the bot alongside Lavalink rather than gating on health", () => {
+    // lavalink-client retries the node connection on its own, so a healthcheck
+    // that is wrong must never be able to stop the whole stack from starting.
+    assert.equal(compose.services.bot.depends_on.lavalink.condition, "service_started");
+  });
+
+  it("authenticates its healthcheck", () => {
+    // Every Lavalink v4 REST endpoint needs the Authorization header; without
+    // it the probe gets a 401 and the container is marked unhealthy forever.
+    const probe = compose.services.lavalink.healthcheck.test.join(" ");
+    assert.match(probe, /Authorization/);
+    assert.match(probe, /LAVALINK_PASSWORD/);
+    assert.match(probe, /\/v4\/info/);
   });
 
   it("never publishes the Lavalink port to the host", () => {
