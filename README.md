@@ -83,7 +83,6 @@ Measured, not estimated:
 | --- | ---: | --- |
 | Lavalink image | ~380 MB | A JVM. This is the floor for Lavalink. |
 | Bot image | ~150 MB | ~135 MB of that is the Node runtime itself. |
-| Plugin volume | ~2 MB | One plugin: the YouTube source. |
 | Container logs | ≤ 20 MB | Capped at 5 MB × 2 files per service. |
 | **The bot's own code** | **~400 KB** | Source, tests, config and docs combined. |
 

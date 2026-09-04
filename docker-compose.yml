@@ -7,7 +7,6 @@
 # Disk footprint once running is roughly:
 #   lavalink image  ~380 MB   (a JVM; this is the floor for Lavalink)
 #   bot image       ~150 MB   (mostly the Node runtime itself)
-#   plugin volume    ~2 MB    (one plugin: the YouTube source)
 #   container logs  ≤ 20 MB   (capped below)
 
 services:
@@ -34,8 +33,11 @@ services:
       YOUTUBE_VISITOR_DATA: ${YOUTUBE_VISITOR_DATA:-}
     volumes:
       - ./lavalink/application.yml:/opt/Lavalink/application.yml:ro
-      # The plugin jar is downloaded once and reused across restarts (~2 MB).
-      - lavalink-plugins:/opt/Lavalink/plugins
+      # No volume on /opt/Lavalink/plugins on purpose. Lavalink runs as a
+      # non-root user, and Docker creates a named volume owned by root, so the
+      # server could not write the plugin jar it downloads and died at startup.
+      # The jar is ~1.5 MB and is re-fetched only when the container is
+      # recreated, which is a far better trade than a permissions landmine.
     networks:
       - pmjarvis
     healthcheck:
@@ -83,6 +85,3 @@ services:
 networks:
   pmjarvis:
     driver: bridge
-
-volumes:
-  lavalink-plugins:

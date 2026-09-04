@@ -220,7 +220,12 @@ describe("footprint", () => {
     assert.doesNotMatch(dependencies, /sponsorblock/i);
   });
 
-  it("keeps only one Lavalink volume", () => {
-    assert.deepEqual(Object.keys(compose.volumes), ["lavalink-plugins"]);
+  it("declares no named volumes at all", () => {
+    // A named volume on /opt/Lavalink/plugins is created root-owned, which the
+    // non-root Lavalink user cannot write to; it crashed the server at startup.
+    // The only bind mount is the read-only config file.
+    assert.equal(compose.volumes, undefined);
+    const mounts = compose.services.lavalink.volumes;
+    assert.deepEqual(mounts, ["./lavalink/application.yml:/opt/Lavalink/application.yml:ro"]);
   });
 });
