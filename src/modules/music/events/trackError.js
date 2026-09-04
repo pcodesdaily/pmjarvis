@@ -1,12 +1,13 @@
 import { createLogger } from "../../../core/logger.js";
-import { warn } from "../lib/embeds.js";
-import { trackLink } from "../lib/format.js";
+import { info, warn } from "../lib/embeds.js";
+import { findFallbackTrack } from "../lib/fallback.js";
+import { sourceLabel, trackLink } from "../lib/format.js";
 
 const log = createLogger("track");
 
-async function notify(client, player, message) {
+async function notify(client, player, embed) {
   const channel = await client.channels.fetch(player.textChannelId).catch(() => null);
-  if (channel?.isTextBased()) await channel.send({ embeds: [warn(message)] }).catch(() => {});
+  if (channel?.isTextBased()) await channel.send({ embeds: [embed] }).catch(() => {});
 }
 
 export default {
@@ -15,7 +16,23 @@ export default {
 
   async execute(client, player, track, payload) {
     log.warn(`Track error in ${player.guildId}: ${payload?.exception?.message ?? "unknown"}`);
-    // autoSkipOnResolveError moves on for us; this just explains the gap.
-    await notify(client, player, `I could not play ${trackLink(track)}, so I am skipping it.`);
+
+    // Try the same song on another platform before giving up on it. Queued at
+    // the front so the automatic skip picks it up as the next track.
+    const replacement = await findFallbackTrack(player, track);
+    if (replacement) {
+      await player.queue.add(replacement, 0);
+      log.info(`Falling back to ${replacement.info.sourceName} for "${track?.info?.title}".`);
+      await notify(
+        client,
+        player,
+        info(
+          `${trackLink(track)} would not play, so I am playing it from **${sourceLabel(replacement.info.sourceName)}** instead.`,
+        ),
+      );
+      return;
+    }
+
+    await notify(client, player, warn(`I could not play ${trackLink(track)}, so I am skipping it.`));
   },
 };

@@ -199,6 +199,7 @@ worth knowing about:
 | `MAX_VOLUME` | `150` | Ceiling users can set. |
 | `VOLUME_DECREMENTER` | `0.85` | Headroom factor applied below the shown volume. |
 | `DEFAULT_SEARCH_PLATFORM` | `ytmsearch` | Where bare song titles are searched. |
+| `FALLBACK_SEARCH_PLATFORM` | `scsearch` | Where to retry a song that will not play. Empty disables it. |
 | `LEAVE_ON_END_MS` | `120000` | Leave this long after the queue empties (`0` = stay). |
 | `LEAVE_ON_EMPTY_MS` | `60000` | Leave this long after the channel empties (`0` = stay). |
 | `DJ_FREE_FOR_ALL` | `true` | `false` requires a DJ role for destructive commands. |
@@ -349,8 +350,13 @@ Put the two values it prints into `.env` as `YOUTUBE_PO_TOKEN` and
 These expire after a while; rerun the generator when playback starts failing
 again.
 
-*If YouTube stays hostile*, SoundCloud needs none of this and works
-immediately:
+**You do not have to do any of this.** By default, a track YouTube refuses to
+serve is retried on SoundCloud automatically, and the music keeps playing. The
+steps above only buy you YouTube's slightly better bitrate on tracks that would
+otherwise fall back.
+
+*To skip YouTube entirely*, make SoundCloud the primary source. Nothing to sign
+in to, nothing that expires:
 
 ```bash
 sed -i 's/^DEFAULT_SEARCH_PLATFORM=.*/DEFAULT_SEARCH_PLATFORM=scsearch/' .env && docker compose up -d bot

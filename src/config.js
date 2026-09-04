@@ -61,6 +61,9 @@ export const config = {
     // do not clip. Display volume stays 1:1 for the user.
     volumeDecrementer: Number.parseFloat(process.env.VOLUME_DECREMENTER || "0.85"),
     defaultSearchPlatform: process.env.DEFAULT_SEARCH_PLATFORM || "ytmsearch",
+    // When a track will not play, look for the same song here instead of
+    // skipping it. Set to an empty string to turn the behaviour off.
+    fallbackSearchPlatform: process.env.FALLBACK_SEARCH_PLATFORM ?? "scsearch",
     // Milliseconds of silence before the bot leaves an empty queue. 0 = never leave.
     leaveOnEndMs: int(process.env.LEAVE_ON_END_MS, 120_000),
     // Milliseconds before leaving a voice channel with no human listeners. 0 = never leave.
