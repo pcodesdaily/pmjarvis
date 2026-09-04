@@ -123,6 +123,7 @@ describe("every command runs through the text path", () => {
     "remove 1",
     "remove 1 2",
     "clear",
+    "autoplay",
     "join",
     "info",
     "help",
@@ -163,7 +164,7 @@ describe("greedy argument handling", () => {
     });
     await sendMessage(bot, `${config.prefix}play the sound of silence disturbed cover`);
 
-    assert.equal(seen, "ytmsearch:the sound of silence disturbed cover");
+    assert.equal(seen, "scsearch:the sound of silence disturbed cover");
   });
 
   it("splits flags off the end of the query", async (t) => {
@@ -175,9 +176,9 @@ describe("greedy argument handling", () => {
       seen = identifier;
       return searchResponse(tracks(1));
     });
-    await sendMessage(bot, `${config.prefix}play bohemian rhapsody --source scsearch`);
+    await sendMessage(bot, `${config.prefix}play bohemian rhapsody --source bcsearch`);
 
-    assert.equal(seen, "scsearch:bohemian rhapsody");
+    assert.equal(seen, "bcsearch:bohemian rhapsody");
   });
 
   it("treats a bare boolean flag as true", async (t) => {
@@ -186,15 +187,15 @@ describe("greedy argument handling", () => {
 
     bot.lava.queueSearch(playlistResponse("Mixed", tracks(20)));
     const command = bot.command("play");
-    const message = makeMessage(bot, `${config.prefix}play https://youtube.com/playlist?list=x --shuffle`);
+    const message = makeMessage(bot, `${config.prefix}play https://soundcloud.com/u/sets/x --shuffle`);
     const ctx = new Ctx({
       client: bot.client,
       command,
       message,
-      args: ["https://youtube.com/playlist?list=x", "--shuffle"],
+      args: ["https://soundcloud.com/u/sets/x", "--shuffle"],
     });
 
     assert.equal(ctx.boolean("shuffle"), true);
-    assert.equal(ctx.string("query"), "https://youtube.com/playlist?list=x");
+    assert.equal(ctx.string("query"), "https://soundcloud.com/u/sets/x");
   });
 });

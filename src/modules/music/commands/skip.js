@@ -1,4 +1,5 @@
 import { SlashCommandBuilder } from "discord.js";
+import { isAutoplayEnabled } from "../lib/autoplay.js";
 import { success } from "../lib/embeds.js";
 import { fail, getPlayer, requireDJ, requireSameVoice } from "../lib/guards.js";
 import { trackLink } from "../lib/format.js";
@@ -28,7 +29,7 @@ export default {
       return ctx.reply({ embeds: [success(`Jumped to track **#${to}**.`)] });
     }
 
-    if (!player.queue.tracks.length) {
+    if (!player.queue.tracks.length && !isAutoplayEnabled(player)) {
       await player.stopPlaying(true, false);
       return ctx.reply({ embeds: [success("Skipped the last song. The queue is now empty.")] });
     }

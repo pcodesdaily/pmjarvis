@@ -22,26 +22,28 @@ export function nowPlayingEmbed(player, { compact = false } = {}) {
   const track = player.queue.current;
   if (!track) return info("Nothing is playing right now.");
 
-  const length = trackLength(track);
-  const position = Math.min(player.position, length || player.position);
-  const bar = track.info.isStream
-    ? "🔴 **Live stream**"
-    : `${progressBar(position, length)}\n\`${formatDuration(position)} / ${formatDuration(length)}\``;
+  // No progress bar. A Discord embed is a static snapshot, so a bar would show
+  // whatever the position was when it was posted and never move, which reads as
+  // broken. The total length is shown instead, because that stays true.
+  const length = formatDuration(trackLength(track), { stream: track.info.isStream });
 
   const embed = base(config.colors.primary)
     .setAuthor({ name: player.paused ? "Paused" : "Now playing" })
     .setTitle(truncate(track.info.title, 90))
     .setURL(track.info.uri ?? null)
-    .setDescription(`by **${escapeMd(truncate(track.info.author ?? "Unknown", 60))}**\n\n${bar}`)
+    .setDescription(
+      [
+        `by **${escapeMd(truncate(track.info.author ?? "Unknown", 60))}**`,
+        track.info.isStream ? "Live stream" : `Length \`${length}\``,
+      ].join("\n"),
+    )
     .setThumbnail(track.info.artworkUrl ?? null);
 
   if (!compact) {
     const upNext = player.queue.tracks[0];
     embed.addFields(
       { name: "Requested by", value: requesterMention(track.requester), inline: true },
-      { name: "Volume", value: `${displayVolume(player)}%`, inline: true },
       { name: "Loop", value: REPEAT_LABEL[player.repeatMode] ?? "Off", inline: true },
-      { name: "Source", value: sourceLabel(track.info.sourceName), inline: true },
       { name: "In queue", value: `${player.queue.tracks.length} track(s)`, inline: true },
     );
     if (upNext) embed.addFields({ name: "Up next", value: trackLink(upNext) });

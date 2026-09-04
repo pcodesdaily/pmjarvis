@@ -2,6 +2,7 @@ import { MessageFlags } from "discord.js";
 import config from "../../../config.js";
 import { buildControlRows, buildQueueRows } from "./controls.js";
 import { nowPlayingEmbed, QUEUE_PAGE_SIZE, queueEmbed } from "./embeds.js";
+import { isAutoplayEnabled, setAutoplay } from "./autoplay.js";
 import { requireDJ } from "./guards.js";
 import { displayVolume, setDisplayVolume } from "./volume.js";
 
@@ -56,8 +57,13 @@ export async function handleMusicButton(interaction) {
       return refreshPanel(interaction, player);
     }
 
+    case "autoplay": {
+      setAutoplay(player, !isAutoplayEnabled(player));
+      return refreshPanel(interaction, player);
+    }
+
     case "skip": {
-      if (!player.queue.tracks.length) {
+      if (!player.queue.tracks.length && !isAutoplayEnabled(player)) {
         await interaction.deferUpdate();
         return player.stopPlaying(true, false);
       }

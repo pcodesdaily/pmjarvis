@@ -9,18 +9,18 @@ server:
     enabled: false
 
 lavalink:
-  pluginsDir: "./plugins"
-  plugins:
-    # The only plugin this build needs. The deprecated built-in YouTube source
-    # is replaced by this one, and it is where audio quality comes from.
-    - dependency: "dev.lavalink.youtube:youtube-plugin:1.18.2"
-      snapshot: false
+  # No plugins. SoundCloud, Bandcamp, Twitch, Vimeo, Niconico and direct audio
+  # links are all built into Lavalink itself, so there is nothing to download,
+  # nothing to sign in to and nothing that expires.
+  plugins: []
 
   server:
     password: "${LAVALINK_PASSWORD:youshallnotpass}"
 
     sources:
-      # false: the youtube-plugin above replaces the built-in source.
+      # YouTube is off. It blocks datacentre IPs and needs a sign-in plus a
+      # token that expires every few weeks, which is not a reasonable thing to
+      # ask of anyone running a music bot.
       youtube: false
       bandcamp: true
       soundcloud: true
@@ -62,39 +62,6 @@ lavalink:
     youtubeSearchEnabled: true
     soundcloudSearchEnabled: true
     gc-warnings: true
-
-plugins:
-  youtube:
-    enabled: true
-    allowSearch: true
-    allowDirectVideoIds: true
-    allowDirectPlaylistIds: true
-    # Order matters: the first client that can serve a track wins.
-    #   MUSIC  search only, this is what powers the ytmsearch: prefix
-    #   TV     the ONLY client that supports OAuth, so it is what makes
-    #          signed-in playback work on a VPS. Without it, enabling oauth
-    #          below does nothing at all.
-    #   the rest are Opus-capable fallbacks, so Discord passes the audio
-    #   through without a second lossy re-encode.
-    clients:
-      - MUSIC
-      - TV
-      - ANDROID_VR
-      - WEB
-      - TVHTML5_SIMPLY
-      - WEBEMBEDDED
-    # On a VPS this is usually REQUIRED, not optional. YouTube answers
-    # datacentre IPs with "This video requires login", and signing in with a
-    # throwaway Google account is what clears it. See the README.
-    oauth:
-      enabled: ${YOUTUBE_OAUTH_ENABLED:false}
-      refreshToken: "${YOUTUBE_REFRESH_TOKEN:}"
-      skipInitialization: ${YOUTUBE_OAUTH_SKIP_INIT:false}
-    # Optional proof-of-origin token; only needed if YouTube starts challenging
-    # your VPS IP. See the youtube-source README for how to generate one.
-    pot:
-      token: "${YOUTUBE_PO_TOKEN:}"
-      visitorData: "${YOUTUBE_VISITOR_DATA:}"
 
 metrics:
   prometheus:

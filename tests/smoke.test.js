@@ -9,7 +9,7 @@ describe("harness", () => {
     const bot = await bootBot();
     after(() => bot.teardown());
 
-    assert.ok(bot.client.commands.size >= 19, "commands should be loaded");
+    assert.ok(bot.client.commands.size >= 20, "commands should be loaded");
 
     const { text } = await bot.slash("ping");
     assert.match(text, /Pong/);

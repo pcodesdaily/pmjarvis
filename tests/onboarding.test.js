@@ -184,9 +184,9 @@ describe("button panel", () => {
       "Stop",
       "Loop: Off",
       "Shuffle",
+      "Autoplay: On",
       "Vol -",
       "Vol +",
-      "Queue",
     ]);
   });
 

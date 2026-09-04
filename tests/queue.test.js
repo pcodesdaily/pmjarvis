@@ -250,22 +250,38 @@ describe("/nowplaying", () => {
       "music:stop",
       "music:loop",
       "music:shuffle",
+      "music:autoplay",
       "music:voldown",
       "music:volup",
-      "music:queue",
     ]);
   });
 
-  it("shows a progress bar for a normal track and LIVE for a stream", async (t) => {
+  it("shows the length, and never a progress bar", async (t) => {
     const bot = await bootBot();
     t.after(() => bot.teardown());
 
     await seedPlayer(bot, { tracks: [makeRawTrack({ length: 200_000 })] });
     const normal = await bot.slash("nowplaying");
-    assert.match(normal.text, /🔘/);
+    // A bar inside a static embed freezes at whatever position it was posted
+    // at, so it reads as broken. The length stays true instead.
+    assert.doesNotMatch(normal.text, /🔘|▬/u);
+    assert.match(normal.text, /Length/);
+    assert.match(normal.text, /3:20/);
 
     await seedPlayer(bot, { tracks: [makeRawTrack({ isStream: true })] });
     const live = await bot.slash("nowplaying");
     assert.match(live.text, /Live stream/);
+  });
+
+  it("does not show volume or source", async (t) => {
+    const bot = await bootBot();
+    t.after(() => bot.teardown());
+    await seedPlayer(bot, { tracks: [makeRawTrack()] });
+
+    const { text } = await bot.slash("nowplaying");
+    assert.doesNotMatch(text, /Volume/);
+    assert.doesNotMatch(text, /Source/);
+    assert.match(text, /Requested by/);
+    assert.match(text, /In queue/);
   });
 });

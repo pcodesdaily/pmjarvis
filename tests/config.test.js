@@ -48,65 +48,26 @@ describe("Lavalink configuration", () => {
     assert.equal(server.useSeekGhosting, true);
   });
 
-  it("prefers Opus-capable YouTube clients", () => {
-    const clients = lavalinkYml.plugins.youtube.clients;
-    const VALID = [
-      "MUSIC",
-      "WEB",
-      "MWEB",
-      "WEBEMBEDDED",
-      "ANDROID",
-      "ANDROID_MUSIC",
-      "ANDROID_VR",
-      "IOS",
-      "TV",
-      "TVHTML5_SIMPLY",
-    ];
-    for (const client of clients) assert.ok(VALID.includes(client), `unknown YouTube client "${client}"`);
-    const opusCapable = ["WEB", "MWEB", "ANDROID_VR", "TV", "TVHTML5_SIMPLY"];
-    assert.ok(clients.some((client) => opusCapable.includes(client)), "at least one Opus client is required");
+  it("loads no plugins at all", () => {
+    // SoundCloud, Bandcamp, Twitch, Vimeo and HTTP are built into Lavalink.
+    // Nothing downloads at boot, nothing to sign in to, nothing that expires.
+    assert.deepEqual(lavalinkYml.lavalink.plugins, []);
+    assert.equal(lavalinkYml.plugins, undefined);
   });
 
-  it("keeps the only OAuth-capable client whenever sign-in can be enabled", () => {
-    // TV is the sole client youtube-source can drive with OAuth. Without it,
-    // YOUTUBE_OAUTH_ENABLED=true logs "no OAuth-compatible clients" and
-    // playback still fails with "This video requires login" on a VPS.
-    assert.ok(
-      lavalinkYml.plugins.youtube.clients.includes("TV"),
-      "TV must stay in the client list or OAuth sign-in does nothing",
-    );
-    assert.ok(lavalinkYml.plugins.youtube.oauth, "the oauth block must exist");
-  });
-
-  it("keeps MUSIC, which is what powers ytmsearch", () => {
-    assert.ok(lavalinkYml.plugins.youtube.clients.includes("MUSIC"));
-  });
-
-  it("carries exactly one plugin — the YouTube source", () => {
-    const dependencies = lavalinkYml.lavalink.plugins.map((plugin) => plugin.dependency);
-    assert.deepEqual(dependencies, ["dev.lavalink.youtube:youtube-plugin:1.18.2"]);
-    assert.deepEqual(Object.keys(lavalinkYml.plugins), ["youtube"]);
+  it("keeps YouTube switched off", () => {
+    assert.equal(lavalinkYml.lavalink.server.sources.youtube, false);
   });
 
   it("offers only search sources the audio server can actually stream", async () => {
     const { SEARCH_SOURCES } = await import("../src/modules/music/lib/player.js");
     const enabled = lavalinkYml.lavalink.server.sources;
-    // Every advertised source must map to something Lavalink has switched on.
-    // youtube is served by the plugin rather than the built-in source manager.
-    const backing = {
-      ytmsearch: "youtube",
-      ytsearch: "youtube",
-      scsearch: "soundcloud",
-      bcsearch: "bandcamp",
-    };
+    const backing = { scsearch: "soundcloud", bcsearch: "bandcamp" };
     for (const { value } of SEARCH_SOURCES) {
       const source = backing[value];
-      assert.ok(source, `no backing source recorded for ${value}`);
-      if (source !== "youtube") {
-        assert.equal(enabled[source], true, `${value} needs lavalink.server.sources.${source}`);
-      }
+      assert.ok(source, "no backing source recorded for " + value);
+      assert.equal(enabled[source], true);
     }
-    assert.equal(lavalinkYml.plugins.youtube.enabled, true);
   });
 
 });
@@ -121,6 +82,13 @@ describe("environment wiring", () => {
     const provided = new Set(Object.keys(compose.services.lavalink.environment ?? {}));
     const missing = [...new Set(placeholders)].filter((name) => !provided.has(name));
     assert.deepEqual(missing, [], `application.yml reads env vars compose never sets: ${missing.join(", ")}`);
+  });
+
+  it("asks for no credentials of any kind", () => {
+    const text = read(".env.example");
+    for (const name of ["YOUTUBE_OAUTH", "YOUTUBE_REFRESH_TOKEN", "YOUTUBE_PO_TOKEN", "SPOTIFY_CLIENT"]) {
+      assert.ok(!text.includes(name), name + " should be gone: the bot needs no logins");
+    }
   });
 
   it("documents every optional variable in .env.example", () => {

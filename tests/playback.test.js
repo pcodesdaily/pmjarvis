@@ -40,7 +40,7 @@ describe("/play", () => {
     });
     await bot.slash("play", { query: "lofi beats" });
 
-    assert.equal(seen, "ytmsearch:lofi beats");
+    assert.equal(seen, "scsearch:lofi beats");
   });
 
   it("honours an explicit source", async (t) => {
@@ -61,11 +61,11 @@ describe("/play", () => {
     const bot = await bootBot();
     t.after(() => bot.teardown());
 
-    const url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+    const url = "https://soundcloud.com/artist/some-track";
     let seen = null;
     bot.lava.onSearch((identifier) => {
       seen = identifier;
-      return trackResponse(makeRawTrack({ uri: url, sourceName: "youtube" }));
+      return trackResponse(makeRawTrack({ uri: url, sourceName: "soundcloud" }));
     });
     await bot.slash("play", { query: url });
 
@@ -77,7 +77,7 @@ describe("/play", () => {
     t.after(() => bot.teardown());
 
     bot.lava.queueSearch(playlistResponse("Road Trip", tracks(12)));
-    const { text } = await bot.slash("play", { query: "https://youtube.com/playlist?list=abc" });
+    const { text } = await bot.slash("play", { query: "https://soundcloud.com/user/sets/road-trip" });
 
     assert.match(text, /Playlist added to queue/);
     assert.match(text, /Road Trip/);
@@ -106,7 +106,7 @@ describe("/play", () => {
     t.after(() => bot.teardown());
 
     bot.lava.queueSearch(playlistResponse("Big List", tracks(40)));
-    await bot.slash("play", { query: "https://youtube.com/playlist?list=big", shuffle: true });
+    await bot.slash("play", { query: "https://soundcloud.com/user/sets/big", shuffle: true });
 
     const player = bot.client.lavalink.getPlayer(bot.guild.id);
     const order = player.queue.tracks.map((track) => track.info.identifier);
@@ -139,13 +139,14 @@ describe("/play", () => {
     t.after(() => bot.teardown());
 
     for (const [url, platform] of [
+      ["https://www.youtube.com/watch?v=abc", "YouTube"],
       ["https://open.spotify.com/track/abc", "Spotify"],
       ["https://music.apple.com/us/album/x/1", "Apple Music"],
       ["https://www.deezer.com/track/123", "Deezer"],
     ]) {
       const { text } = await bot.slash("play", { query: url });
       assert.match(text, new RegExp(`${platform} links do not work here`));
-      assert.match(text, /Search by song name instead/);
+      assert.match(text, /search by song name instead/i);
     }
   });
 
@@ -229,13 +230,24 @@ describe("transport controls", () => {
     assert.match(text, /only 2 track/);
   });
 
-  it("skipping the last track stops cleanly instead of erroring", async (t) => {
+  it("skipping the last track stops cleanly when autoplay is off", async (t) => {
     const bot = await bootBot();
     t.after(() => bot.teardown());
-    await seedPlayer(bot, { tracks: tracks(1) });
+    const player = await seedPlayer(bot, { tracks: tracks(1) });
+    player.setData("autoplay", false);
 
     const { text } = await bot.slash("skip");
     assert.match(text, /queue is now empty/);
+    assert.doesNotMatch(text, /Something went wrong/);
+  });
+
+  it("skipping the last track with autoplay on does not error", async (t) => {
+    const bot = await bootBot();
+    t.after(() => bot.teardown());
+    const player = await seedPlayer(bot, { tracks: tracks(1) });
+    assert.equal(player.getData("autoplay"), true, "autoplay is on by default");
+
+    const { text } = await bot.slash("skip");
     assert.doesNotMatch(text, /Something went wrong/);
   });
 

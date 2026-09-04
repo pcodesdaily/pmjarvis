@@ -1,21 +1,15 @@
 import { ChannelType } from "discord.js";
 import config from "../../../config.js";
 import { CommandError, fail, requireBotPermissions, requireMemberVoice } from "./guards.js";
+import { setAutoplay } from "./autoplay.js";
 
 /** Search sources exposed to users. All of these stream directly. */
 export const SEARCH_SOURCES = [
-  { name: "YouTube Music", value: "ytmsearch" },
-  { name: "YouTube", value: "ytsearch" },
   { name: "SoundCloud", value: "scsearch" },
   { name: "Bandcamp", value: "bcsearch" },
 ];
 
 const SOURCE_ALIASES = new Map([
-  ["yt", "ytsearch"],
-  ["youtube", "ytsearch"],
-  ["ytm", "ytmsearch"],
-  ["ytmusic", "ytmsearch"],
-  ["youtubemusic", "ytmsearch"],
   ["sc", "scsearch"],
   ["soundcloud", "scsearch"],
   ["bc", "bcsearch"],
@@ -59,6 +53,7 @@ export async function ensurePlayer(ctx, { connect = true } = {}) {
     vcRegion: voiceChannel.rtcRegion ?? undefined,
   });
 
+  setAutoplay(player, config.music.autoplayEnabledByDefault);
   // Keep the user-facing volume separate from the scaled Lavalink value.
   player.setData("displayVolume", config.music.defaultVolume);
   if (connect) await player.connect();
@@ -80,7 +75,7 @@ export async function searchTracks(player, { query, source, requester }) {
     const platform = unsupportedLink(trimmed);
     if (platform) {
       fail(
-        `${platform} links do not work here. ${platform} does not let other apps play its music. Search by song name instead, like \`${config.prefix}play blinding lights the weeknd\`.`,
+        `${platform} links do not work here. Just search by song name instead, like \`${config.prefix}play blinding lights the weeknd\`, and I will find it.`,
       );
     }
   }
@@ -111,6 +106,7 @@ export async function searchTracks(player, { query, source, requester }) {
  * instead of returning a bare "no results".
  */
 const UNSUPPORTED_HOSTS = [
+  [/(^|\.)(youtube\.com|youtu\.be|music\.youtube\.com)$/i, "YouTube"],
   [/(^|\.)(open\.)?spotify\.com$/i, "Spotify"],
   [/(^|\.)music\.apple\.com$/i, "Apple Music"],
   [/(^|\.)deezer\.com$/i, "Deezer"],

@@ -1,4 +1,5 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
+import { isAutoplayEnabled } from "./autoplay.js";
 import { displayVolume } from "./volume.js";
 
 export const BUTTON_PREFIX = "music";
@@ -28,7 +29,7 @@ export function buildControlRows(player) {
   if (!player?.queue?.current) return [];
 
   const hasPrevious = player.queue.previous.length > 0;
-  const hasNext = player.queue.tracks.length > 0;
+  const hasNext = player.queue.tracks.length > 0 || isAutoplayEnabled(player);
   const looping = player.repeatMode !== "off";
 
   const row1 = new ActionRowBuilder().addComponents(
@@ -38,12 +39,18 @@ export function buildControlRows(player) {
     button("stop", "Stop", ButtonStyle.Danger),
   );
 
+  // Discord allows five buttons per row. Queue lives on its own command, since
+  // the panel already shows what is playing and what is next.
   const row2 = new ActionRowBuilder().addComponents(
     button("loop", LOOP_LABEL[player.repeatMode] ?? LOOP_LABEL.off, looping ? ButtonStyle.Success : ButtonStyle.Secondary),
     button("shuffle", "Shuffle", ButtonStyle.Secondary, { disabled: player.queue.tracks.length < 2 }),
+    button(
+      "autoplay",
+      isAutoplayEnabled(player) ? "Autoplay: On" : "Autoplay: Off",
+      isAutoplayEnabled(player) ? ButtonStyle.Success : ButtonStyle.Secondary,
+    ),
     button("voldown", "Vol -", ButtonStyle.Secondary, { disabled: displayVolume(player) <= 0 }),
     button("volup", "Vol +", ButtonStyle.Secondary),
-    button("queue", "Queue", ButtonStyle.Secondary),
   );
 
   return [row1, row2];

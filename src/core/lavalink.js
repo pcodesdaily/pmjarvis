@@ -1,6 +1,7 @@
 import { LavalinkManager } from "lavalink-client";
 import config from "../config.js";
 import { createLogger } from "./logger.js";
+import { autoPlayFunction } from "../modules/music/lib/autoplay.js";
 
 const log = createLogger("lavalink");
 
@@ -40,9 +41,11 @@ export function createLavalink(client) {
             }
           : requester,
       onDisconnect: { autoReconnect: true, destroyPlayer: false },
-      ...(config.music.leaveOnEndMs > 0
-        ? { onEmptyQueue: { destroyAfterMs: config.music.leaveOnEndMs } }
-        : {}),
+      minAutoPlayMs: 10_000,
+      onEmptyQueue: {
+        autoPlayFunction,
+        ...(config.music.leaveOnEndMs > 0 ? { destroyAfterMs: config.music.leaveOnEndMs } : {}),
+      },
     },
 
     advancedOptions: {

@@ -130,7 +130,7 @@ describe("hostile track metadata", () => {
     );
     bot.lava.queueSearch(playlistResponse("X".repeat(300), huge));
 
-    const { interaction } = await bot.slash("play", { query: "https://youtube.com/playlist?list=huge" });
+    const { interaction } = await bot.slash("play", { query: "https://soundcloud.com/u/sets/huge" });
     for (const embed of embedsOf(interaction)) assertEmbedFits(embed, "/play playlist");
   });
 
@@ -146,7 +146,7 @@ describe("hostile track metadata", () => {
 
     const huge = Array.from({ length: 300 }, (_, index) => makeRawTrack({ identifier: `q${index}` }));
     bot.lava.queueSearch(playlistResponse("Capped", huge));
-    await bot.slash("play", { query: "https://youtube.com/playlist?list=capped" });
+    await bot.slash("play", { query: "https://soundcloud.com/u/sets/capped" });
 
     const player = bot.client.lavalink.getPlayer(bot.guild.id);
     assert.equal(player.queue.tracks.length + 1, 25);
@@ -335,7 +335,7 @@ describe("command registration payload", () => {
       }
     }
 
-    assert.ok(stub.commands.size >= 19);
+    assert.ok(stub.commands.size >= 20);
   });
 
   it("sends exactly those commands when deploying", async (t) => {
@@ -366,6 +366,7 @@ describe("command registration payload", () => {
     // Pinned deliberately: this build is a YouTube-Music-shaped player, not a
     // kitchen sink. Adding a command here is a conscious decision.
     assert.deepEqual([...stub.commands.keys()].sort(), [
+      "autoplay",
       "clear",
       "help",
       "info",

@@ -9,7 +9,7 @@ added later without touching the music code.
 ## What it does
 
 A deliberately small player, shaped like a music app rather than a kitchen sink.
-19 commands, nothing more:
+20 commands, nothing more:
 
 **Playing** — `/play` (song name, or a link, or a whole playlist), `/search`
 (pick from the top results), `/nowplaying`.
@@ -20,10 +20,13 @@ A deliberately small player, shaped like a music app rather than a kitchen sink.
 **Queue** — `/queue` (paginated), `/shuffle`, `/loop` (off / track / queue),
 `/remove`, `/clear`.
 
-**Other** — `/volume`, `/help`, `/info`, `/ping`.
+**Other** — `/autoplay`, `/volume`, `/help`, `/info`, `/ping`.
+
+Autoplay is on by default: when the queue runs out the bot keeps going with
+similar songs, so the music does not just stop.
 
 Plus a live now-playing panel with buttons for previous, play/pause, skip, stop,
-loop, shuffle, volume and the queue.
+loop, shuffle, autoplay and volume.
 
 Every command works two ways: as a slash command (`/play`) and as a text command
 (`pm!play`, or by mentioning the bot). Both run the exact same code.
@@ -40,40 +43,34 @@ added to a server.
 
 ## Sources
 
-Everything streams directly, and nothing needs an API key or an account:
+Everything streams straight from Lavalink. **No account, no API key, nothing to
+sign in to and nothing that expires.**
 
-- YouTube and YouTube Music
-- SoundCloud
+- SoundCloud (the default)
 - Bandcamp
 - Twitch, Vimeo, Niconico
-- Direct links to audio files and radio streams (mp3, m3u8, aac, flac, …)
+- Direct links to audio files and radio streams (mp3, m3u8, aac, flac, ...)
 
-**Spotify, Apple Music and Deezer links will not play.** Those platforms do not
-let other apps stream their audio; bots that appear to support them are really
-reading the track name and playing a YouTube copy. This build does not carry that
-machinery, so pasting such a link gets a short explanation asking you to search
-by name instead — which finds the same song.
+**YouTube, Spotify, Apple Music and Deezer links will not play.** YouTube blocks
+datacentre IPs and demands a sign-in plus a token that expires every few weeks,
+which is not a reasonable thing to ask of anyone running a music bot. The others
+never allowed third-party playback at all. Paste one of those links and the bot
+explains it and asks you to search by name instead, which finds the same song.
 
 ## Audio quality
 
-Quality comes from the pipeline, not from a setting:
-
-- **Lavalink is tuned for it** — `opusEncodingQuality: 10`, `resamplingQuality:
+- **Lavalink is tuned for it** - `opusEncodingQuality: 10`, `resamplingQuality:
   HIGH`, a 400 ms NAS buffer and a 5 s frame buffer to ride out GC pauses.
-- **Opus-native YouTube clients are preferred.** The `ANDROID_VR`, `WEB` and `TV`
-  clients hand back Opus, which Discord forwards without a second lossy
-  re-encode. `MUSIC` (YouTube Music) is first in the list because it gives by far
-  the best matches when you search by song title.
 - **Headroom instead of clipping.** The bot plays a little below the volume it
-  displays (`VOLUME_DECREMENTER`), so loud masters have room to breathe instead
-  of clipping.
+  displays (`VOLUME_DECREMENTER`), so loud masters have room to breathe.
 - **No audio effects.** There is no equaliser or filter command, so nothing ever
   resamples or re-colours the stream. You hear the source.
 
-One thing is outside the bot's control and matters just as much: **set the voice
-channel bitrate.** Discord defaults new channels to 64 kbps. Right-click the
-channel, Edit Channel, and set it to 96 kbps — or up to 256/384 kbps if the
-server is boosted. This is the single biggest quality win available to you.
+The biggest single improvement is not in this repo: **raise the voice channel
+bitrate.** Discord defaults new channels to 64 kbps and allows 96 kbps
+unboosted, 128/256/384 kbps with server boosts. Right-click the channel, Edit
+Channel, and drag Bitrate to the maximum. At those ceilings the difference
+between one source and another is largely academic.
 
 ## Footprint
 
@@ -198,7 +195,8 @@ worth knowing about:
 | `DEFAULT_VOLUME` | `100` | Starting volume for a new player. |
 | `MAX_VOLUME` | `150` | Ceiling users can set. |
 | `VOLUME_DECREMENTER` | `0.85` | Headroom factor applied below the shown volume. |
-| `DEFAULT_SEARCH_PLATFORM` | `ytmsearch` | Where bare song titles are searched. |
+| `DEFAULT_SEARCH_PLATFORM` | `scsearch` | Where bare song titles are searched. |
+| `AUTOPLAY_DEFAULT` | `true` | Keep playing similar songs when the queue empties. |
 | `FALLBACK_SEARCH_PLATFORM` | `scsearch` | Where to retry a song that will not play. Empty disables it. |
 | `LEAVE_ON_END_MS` | `120000` | Leave this long after the queue empties (`0` = stay). |
 | `LEAVE_ON_EMPTY_MS` | `60000` | Leave this long after the channel empties (`0` = stay). |
@@ -252,8 +250,9 @@ Both services should be `running`, with `lavalink` marked `healthy`. Then:
 docker compose logs lavalink | grep -iE "loaded plugin|ready to accept|error"
 ```
 
-You should see the YouTube plugin load and `Lavalink is ready to accept
-connections`. The bot's own log will print `Audio node "main" connected`.
+You should see `Lavalink is ready to accept connections`. There are no plugins
+to download, so this is fast. The bot's own log will print
+`Audio node "main" connected`.
 
 ## Project layout
 
@@ -319,54 +318,13 @@ enable it, set `ENABLE_MESSAGE_COMMANDS=false` and use slash commands only.
 **Text commands are ignored.** Same intent as above, and make sure
 `ENABLE_MESSAGE_COMMANDS=true`.
 
-**Songs are found but will not play.** Check `docker compose logs lavalink`.
-YouTube blocks datacentre IPs, and a VPS usually needs both of the steps below.
-Search keeps working throughout, because search and playback hit different
-endpoints. Use a **throwaway Google account**, never your main one.
+**A song will not play.** Check `docker compose logs lavalink`. If a single
+track fails, the bot already retries it on another platform automatically before
+giving up, so a persistent failure usually means the search found nothing rather
+than that playback broke.
 
-*Step 1, sign in.* Fixes `This video requires login`:
-
-```bash
-sed -i 's/^YOUTUBE_OAUTH_ENABLED=.*/YOUTUBE_OAUTH_ENABLED=true/' .env && docker compose up -d --force-recreate lavalink
-```
-
-Watch `docker compose logs -f lavalink` for a link and a code, approve it at
-https://www.google.com/device, then save the token it prints so the sign-in
-survives a rebuild:
-
-```bash
-RT=$(docker compose logs lavalink | grep -oE 'reused\. \([^)]+\)' | tail -1 | sed -E 's/.*\((.*)\)//'); sed -i "s|^YOUTUBE_REFRESH_TOKEN=.*|YOUTUBE_REFRESH_TOKEN=$RT|" .env; unset RT; docker compose up -d --force-recreate lavalink
-```
-
-*Step 2, proof of origin.* Fixes `Sign in to confirm you're not a bot`. The
-token is tied to the IP that made it, so **generate it on the VPS**:
-
-```bash
-docker run --rm quay.io/invidious/youtube-trusted-session-generator
-```
-
-Put the two values it prints into `.env` as `YOUTUBE_PO_TOKEN` and
-`YOUTUBE_VISITOR_DATA`, then `docker compose up -d --force-recreate lavalink`.
-These expire after a while; rerun the generator when playback starts failing
-again.
-
-**You do not have to do any of this.** By default, a track YouTube refuses to
-serve is retried on SoundCloud automatically, and the music keeps playing. The
-steps above only buy you YouTube's slightly better bitrate on tracks that would
-otherwise fall back.
-
-*To skip YouTube entirely*, make SoundCloud the primary source. Nothing to sign
-in to, nothing that expires:
-
-```bash
-sed -i 's/^DEFAULT_SEARCH_PLATFORM=.*/DEFAULT_SEARCH_PLATFORM=scsearch/' .env && docker compose up -d bot
-```
-
-**Audio sounds thin or muffled.** Check the voice channel's bitrate — Discord
-defaults new channels to 64 kbps. See *Audio quality* above.
-
-**A Spotify / Apple Music / Deezer link does nothing.** That is by design; see
-*Sources*. Search by song name instead.
+**A YouTube, Spotify, Apple Music or Deezer link does nothing.** That is by
+design; see *Sources*. Search by song name instead and the bot will find it.
 
 ## Credits
 

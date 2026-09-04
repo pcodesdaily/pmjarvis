@@ -60,7 +60,7 @@ export const config = {
     // Lavalink output is scaled down by this amount so that boosted EQ presets
     // do not clip. Display volume stays 1:1 for the user.
     volumeDecrementer: Number.parseFloat(process.env.VOLUME_DECREMENTER || "0.85"),
-    defaultSearchPlatform: process.env.DEFAULT_SEARCH_PLATFORM || "ytmsearch",
+    defaultSearchPlatform: process.env.DEFAULT_SEARCH_PLATFORM || "scsearch",
     // When a track will not play, look for the same song here instead of
     // skipping it. Set to an empty string to turn the behaviour off.
     fallbackSearchPlatform: process.env.FALLBACK_SEARCH_PLATFORM ?? "scsearch",
@@ -70,6 +70,7 @@ export const config = {
     leaveOnEmptyMs: int(process.env.LEAVE_ON_EMPTY_MS, 60_000),
     maxQueueSize: int(process.env.MAX_QUEUE_SIZE, 5000),
     maxPlaylistSize: int(process.env.MAX_PLAYLIST_SIZE, 1000),
+    autoplayEnabledByDefault: bool(process.env.AUTOPLAY_DEFAULT, true),
     djRoleName: process.env.DJ_ROLE_NAME || "DJ",
     // When true, anyone can use destructive controls; when false a DJ role /
     // Manage Server permission is required once more than one listener is present.
