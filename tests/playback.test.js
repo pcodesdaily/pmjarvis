@@ -90,6 +90,13 @@ describe("/play", () => {
   it("puts a track at the front with next:true", async (t) => {
     const bot = await bootBot();
     t.after(() => bot.teardown());
+    // Straight to playing: this test is about queue position, not choosing.
+    const config = (await import("../src/config.js")).default;
+    const original = config.music.playAsksToChoose;
+    config.music.playAsksToChoose = false;
+    t.after(() => {
+      config.music.playAsksToChoose = original;
+    });
 
     bot.lava.queueSearch(searchResponse(tracks(3)));
     await bot.slash("play", { query: "playlist seed" });

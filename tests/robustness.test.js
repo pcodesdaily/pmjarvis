@@ -259,7 +259,7 @@ describe("/search selection flow", () => {
     });
 
     await runCommand(command, new Ctx({ client: bot.client, command, interaction }));
-    assert.match(responseText(interaction), /Search timed out/);
+    assert.match(responseText(interaction), /did not pick anything/);
   });
 });
 

@@ -31,11 +31,16 @@ loop, shuffle, autoplay and the queue.
 Every command works two ways: as a slash command (`/play`) and as a text command
 (`pm!play`, or by mentioning the bot). Both run the exact same code.
 
+When you search by name the bot shows the results and lets you pick, rather
+than guessing which upload you meant. A pasted link, a playlist, or a search
+with only one result plays straight away. Set `PLAY_ASKS_TO_CHOOSE=false` if
+you would rather it always took the top result.
+
 ### Typical use
 
 1. Join a voice channel
 2. `pm!join` so the bot comes in
-3. `pm!play <song name>` to start the music
+3. `pm!play <song name>`, then pick the one you want from the list
 4. `pm!stop` when you are done, and the bot leaves
 
 The bot also posts a short welcome message with these steps the first time it is
@@ -250,6 +255,7 @@ worth knowing about:
 | `VOLUME_DECREMENTER` | `0.85` | Headroom factor applied below the shown volume. |
 | `DEFAULT_SEARCH_PLATFORM` | `scsearch` | Where bare song titles are searched. |
 | `AUTOPLAY_DEFAULT` | `true` | Keep playing similar songs when the queue empties. |
+| `PLAY_ASKS_TO_CHOOSE` | `true` | Show the results and let the user pick. |
 | `FALLBACK_SEARCH_PLATFORM` | `scsearch` | Where to retry a song that will not play. Empty disables it. |
 | `LEAVE_ON_END_MS` | `120000` | Leave this long after the queue empties (`0` = stay). |
 | `LEAVE_ON_EMPTY_MS` | `60000` | Leave this long after the channel empties (`0` = stay). |

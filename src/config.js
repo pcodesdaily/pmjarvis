@@ -71,6 +71,9 @@ export const config = {
     maxQueueSize: int(process.env.MAX_QUEUE_SIZE, 5000),
     maxPlaylistSize: int(process.env.MAX_PLAYLIST_SIZE, 1000),
     autoplayEnabledByDefault: bool(process.env.AUTOPLAY_DEFAULT, true),
+    // Show the search results and let the user pick, instead of guessing which
+    // one they meant. Set to false to play the top result straight away.
+    playAsksToChoose: bool(process.env.PLAY_ASKS_TO_CHOOSE, true),
     djRoleName: process.env.DJ_ROLE_NAME || "DJ",
     // When true, anyone can use destructive controls; when false a DJ role /
     // Manage Server permission is required once more than one listener is present.

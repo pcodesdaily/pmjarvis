@@ -68,7 +68,7 @@ describe("search ranking", () => {
 });
 
 describe("ranking through /play", () => {
-  it("plays the original when SoundCloud offers edits first", async (t) => {
+  it("offers the original first when SoundCloud puts edits on top", async (t) => {
     const bot = await bootBot();
     t.after(() => bot.teardown());
 
@@ -80,10 +80,25 @@ describe("ranking through /play", () => {
       ]),
     );
 
-    await bot.slash("play", { query: "janiye vishal mishra" });
+    const { interaction } = await bot.slash("play", { query: "janiye vishal mishra" });
+    const payload = interaction.responses.find((entry) => entry.payload?.components?.length)?.payload;
+    const menu = payload.components[0].components[0].toJSON();
+
+    assert.match(menu.options[0].label, /Janiye - Vishal Mishra/, "the real song is the first choice");
+    assert.match(menu.options.at(-1).label, /slowed reverb/);
+  });
+
+  it("plays the single result straight away, with nothing to choose", async (t) => {
+    const bot = await bootBot();
+    t.after(() => bot.teardown());
+
+    bot.lava.queueSearch(searchResponse([makeRawTrack({ title: "Only One", identifier: "solo" })]));
+    const { interaction } = await bot.slash("play", { query: "only one" });
 
     const player = bot.client.lavalink.getPlayer(bot.guild.id);
-    assert.equal(player.queue.current.info.identifier, "real");
+    assert.equal(player.queue.current.info.identifier, "solo");
+    const payload = interaction.responses.at(-1).payload;
+    assert.ok(!payload.components?.length, "one result needs no menu");
   });
 
   it("leaves a playlist in the order the uploader chose", async (t) => {
@@ -120,5 +135,108 @@ describe("ranking through /play", () => {
     const menu = payload.components[0].components[0].toJSON();
 
     assert.match(menu.options[0].label, /Kesariya - Arijit Singh/);
+  });
+});
+
+describe("choosing a song from /play", () => {
+  /** Drives the real command and answers the select menu as a user would. */
+  async function playAndPick(bot, query, index) {
+    const { makeInteraction } = await import("./helpers/discord.js");
+    const Ctx = (await import("../src/core/context.js")).default;
+    const { runCommand } = await import("../src/core/runner.js");
+
+    const command = bot.command("play");
+    const interaction = makeInteraction(bot, { options: { query } });
+    let updated = null;
+    interaction.fetchReply = async () => ({
+      awaitMessageComponent: async () => ({
+        values: [String(index)],
+        async update(payload) {
+          updated = payload;
+        },
+      }),
+    });
+
+    await runCommand(command, new Ctx({ client: bot.client, command, interaction }));
+    return { interaction, updated };
+  }
+
+  it("plays exactly what was picked, not the top result", async (t) => {
+    const bot = await bootBot();
+    t.after(() => bot.teardown());
+
+    bot.lava.queueSearch(
+      searchResponse([
+        makeRawTrack({ title: "Deewaniyat - Original", identifier: "first" }),
+        makeRawTrack({ title: "Deewaniyat - Another Take", identifier: "second" }),
+        makeRawTrack({ title: "Deewaniyat - Third", identifier: "third" }),
+      ]),
+    );
+
+    const { updated } = await playAndPick(bot, "deewaniyat", 1);
+
+    const player = bot.client.lavalink.getPlayer(bot.guild.id);
+    assert.equal(player.queue.current.info.identifier, "second", "the second option was chosen");
+    assert.ok(updated, "the menu is resolved once picked");
+    assert.deepEqual(updated.components, [], "and the menu is removed afterwards");
+  });
+
+  it("queues the pick behind whatever is already playing", async (t) => {
+    const bot = await bootBot();
+    t.after(() => bot.teardown());
+
+    bot.lava.queueSearch(searchResponse([makeRawTrack({ title: "Already Playing", identifier: "one" })]));
+    await bot.slash("play", { query: "already playing" });
+
+    bot.lava.queueSearch(
+      searchResponse([
+        makeRawTrack({ title: "Choice A", identifier: "a" }),
+        makeRawTrack({ title: "Choice B", identifier: "b" }),
+      ]),
+    );
+    await playAndPick(bot, "choice", 1);
+
+    const player = bot.client.lavalink.getPlayer(bot.guild.id);
+    assert.equal(player.queue.current.info.identifier, "one", "the current song keeps playing");
+    assert.deepEqual(player.queue.tracks.map((track) => track.info.identifier), ["b"]);
+  });
+
+  it("shows the artist, length and platform for each option", async (t) => {
+    const bot = await bootBot();
+    t.after(() => bot.teardown());
+
+    bot.lava.queueSearch(
+      searchResponse([
+        makeRawTrack({ title: "Song One", author: "Vishal Mishra", length: 188_000 }),
+        makeRawTrack({ title: "Song Two", author: "Someone Else" }),
+      ]),
+    );
+
+    const { interaction } = await bot.slash("play", { query: "song" });
+    const payload = interaction.responses.find((entry) => entry.payload?.components?.length)?.payload;
+    const menu = payload.components[0].components[0].toJSON();
+
+    assert.match(menu.options[0].description, /Vishal Mishra/);
+    assert.match(menu.options[0].description, /3:08/);
+    assert.match(menu.options[0].description, /SoundCloud/);
+    for (const option of menu.options) {
+      assert.ok(option.label.length <= 100);
+      assert.ok(option.description.length <= 100);
+    }
+  });
+
+  it("never asks when a link was pasted", async (t) => {
+    const bot = await bootBot();
+    t.after(() => bot.teardown());
+
+    bot.lava.onSearch(() =>
+      searchResponse([makeRawTrack({ title: "From A Link", identifier: "linked" })]),
+    );
+    const { interaction } = await bot.slash("play", { query: "https://soundcloud.com/a/track" });
+
+    const player = bot.client.lavalink.getPlayer(bot.guild.id);
+    assert.equal(player.queue.current.info.identifier, "linked");
+    const payload = interaction.responses.at(-1).payload;
+    assert.ok(!payload.components?.length, "a link plays straight away");
   });
 });
