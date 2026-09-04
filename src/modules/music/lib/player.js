@@ -2,6 +2,7 @@ import { ChannelType } from "discord.js";
 import config from "../../../config.js";
 import { CommandError, fail, requireBotPermissions, requireMemberVoice } from "./guards.js";
 import { setAutoplay } from "./autoplay.js";
+import { rankTracks } from "./ranking.js";
 
 /** Search sources exposed to users. All of these stream directly. */
 export const SEARCH_SOURCES = [
@@ -96,6 +97,12 @@ export async function searchTracks(player, { query, source, requester }) {
   }
   if (result.loadType === "empty" || !result.tracks?.length) {
     fail(`No results for **${trimmed.slice(0, 100)}**.`);
+  }
+
+  // Only re-order free-text searches. A pasted link or a playlist has an order
+  // the user chose, and must be left exactly as it is.
+  if (result.loadType === "search") {
+    return { ...result, tracks: rankTracks(result.tracks, trimmed) };
   }
   return result;
 }

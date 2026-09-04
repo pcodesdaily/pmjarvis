@@ -1,5 +1,6 @@
 import config from "../../../config.js";
 import { createLogger } from "../../../core/logger.js";
+import { rankTracks } from "./ranking.js";
 
 const log = createLogger("autoplay");
 
@@ -70,10 +71,12 @@ export async function autoPlayFunction(player, lastPlayedTrack) {
       return null;
     });
 
-    const candidates = (result?.tracks ?? []).filter(isFresh);
-    if (!candidates.length) continue;
+    const fresh = (result?.tracks ?? []).filter(isFresh);
+    if (!fresh.length) continue;
 
-    // Pick from the strongest handful so a long session does not repeat itself.
+    // Rank first, so autoplay does not fill the queue with slowed and reverb
+    // edits, then pick from the strongest handful so a long session varies.
+    const candidates = rankTracks(fresh, attempt.query);
     const pick = candidates[Math.floor(Math.random() * Math.min(candidates.length, 8))];
     pick.userData = { ...(pick.userData ?? {}), autoplay: true };
     rememberPlayed(player, pick);

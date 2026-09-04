@@ -51,6 +51,13 @@ sign in to and nothing that expires.**
 - Twitch, Vimeo, Niconico
 - Direct links to audio files and radio streams (mp3, m3u8, aac, flac, ...)
 
+Search results are re-ranked before anything plays. SoundCloud is full of fan
+re-uploads, so a plain search for a song often surfaces a slowed and reverb
+edit, a nightcore flip or an hour-long loop above the real recording. Those get
+pushed down, unless you asked for one: search "tum hi ho" and you get the
+original, search "tum hi ho slowed reverb" and you get the edit. Pasted links
+and playlists are never reordered.
+
 **YouTube, Spotify, Apple Music and Deezer links will not play.** YouTube blocks
 datacentre IPs and demands a sign-in plus a token that expires every few weeks,
 which is not a reasonable thing to ask of anyone running a music bot. The others
@@ -272,6 +279,7 @@ code paths work.
 | Buttons | all nine panel controls, pagination, permission checks, dead panels |
 | Events | now-playing panel lifecycle, track errors, auto-leave |
 | Guards | not in voice, wrong channel, missing permissions, full channel, DJ rules |
+| Ranking | edited re-uploads demoted, playlists left alone, asked-for edits still win |
 | Robustness | 400-character titles, markdown injection, missing artwork, 500-track queues, every Discord embed and autocomplete limit |
 | Config | `application.yml` parses, the plugin JAR resolves, every env placeholder is wired through compose and documented |
 | Onboarding | `/info` content, the welcome message and its channel fallback, the `pm!` prefix, and that every command appears in `/help` |
