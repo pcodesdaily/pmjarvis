@@ -70,16 +70,19 @@ plugins:
     allowDirectVideoIds: true
     allowDirectPlaylistIds: true
     # Order matters: the first client that can serve a track wins.
-    # MUSIC gives the best matches for "play <song title>"; ANDROID_VR and WEB
-    # return Opus streams, which Discord can pass through without re-encoding.
+    # MUSIC gives the best matches when searching by song title; WEB and
+    # ANDROID_VR return Opus, which Discord passes through without re-encoding.
+    # TV is deliberately absent: its signature extraction is broken against
+    # YouTube's current player script ("must find sig function").
     clients:
       - MUSIC
-      - ANDROID_VR
       - WEB
+      - ANDROID_MUSIC
+      - ANDROID_VR
       - WEBEMBEDDED
-      - TV
-    # Optional. Signing in with a throwaway Google account raises rate limits and
-    # unlocks age-restricted tracks. Leave empty to run fully anonymously.
+    # On a VPS this is usually REQUIRED, not optional. YouTube answers
+    # datacentre IPs with "This video requires login", and signing in with a
+    # throwaway Google account is what clears it. See the README.
     oauth:
       enabled: ${YOUTUBE_OAUTH_ENABLED:false}
       refreshToken: "${YOUTUBE_REFRESH_TOKEN:}"

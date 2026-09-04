@@ -211,7 +211,7 @@ Before you invite the bot anywhere, run:
 npm test
 ```
 
-194 tests cover every command, both invocation paths, and the failure modes that
+197 tests cover every command, both invocation paths, and the failure modes that
 would otherwise show up as a broken bot in a live server. They are not shallow
 mocks: the real `lavalink-client` `Player` and `Queue` run, and so do the real
 module loader, command router and event handlers. Only the Discord gateway and
@@ -318,11 +318,27 @@ enable it, set `ENABLE_MESSAGE_COMMANDS=false` and use slash commands only.
 **Text commands are ignored.** Same intent as above, and make sure
 `ENABLE_MESSAGE_COMMANDS=true`.
 
-**YouTube playback starts failing.** Datacentre IPs get rate-limited eventually.
-Set `YOUTUBE_OAUTH_ENABLED=true` and follow the
-[youtube-source](https://github.com/lavalink-devs/youtube-source) instructions to
-supply a refresh token from a throwaway Google account, or configure a
-`YOUTUBE_PO_TOKEN`.
+**Songs are found but will not play.** The Lavalink log will say
+`This video requires login`. YouTube blocks datacentre IPs, so a VPS almost
+always needs the bot signed in. Use a **throwaway Google account**, never your
+main one:
+
+```bash
+sed -i 's/^YOUTUBE_OAUTH_ENABLED=.*/YOUTUBE_OAUTH_ENABLED=true/' .env && docker compose up -d lavalink
+```
+
+```bash
+docker compose logs -f lavalink | grep -iA3 "oauth\|device"
+```
+
+Lavalink prints a link and a short code. Open the link, enter the code, approve
+with the throwaway account. Playback works immediately after that.
+
+The log then prints a refresh token. Save it so the sign-in survives a rebuild:
+
+```bash
+read -rsp "Refresh token: " RT; echo; sed -i "s|^YOUTUBE_REFRESH_TOKEN=.*|YOUTUBE_REFRESH_TOKEN=$RT|" .env; unset RT; docker compose up -d lavalink
+```
 
 **Audio sounds thin or muffled.** Check the voice channel's bitrate — Discord
 defaults new channels to 64 kbps. See *Audio quality* above.

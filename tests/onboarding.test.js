@@ -155,3 +155,80 @@ describe("/join and /stop as a pair", () => {
     assert.equal(bot.client.lavalink.getPlayer(bot.guild.id), undefined);
   });
 });
+
+describe("button panel", () => {
+  it("labels every control with a readable word, not a symbol", async (t) => {
+    const bot = await bootBot();
+    t.after(() => bot.teardown());
+
+    const { makeRawTrack } = await import("./helpers/lavalink.js");
+    const { seedPlayer } = await import("./helpers/bot.js");
+    await seedPlayer(bot, { tracks: [makeRawTrack(), makeRawTrack(), makeRawTrack()] });
+
+    const { interaction } = await bot.slash("nowplaying");
+    const rows = interaction.responses.at(-1).payload.components;
+    const buttons = rows.flatMap((row) => row.components.map((b) => b.toJSON()));
+
+    assert.equal(buttons.length, 9);
+    for (const b of buttons) {
+      assert.ok(b.label, `every button needs a label: ${b.custom_id}`);
+      assert.ok(b.label.length <= 80, "Discord caps button labels at 80 characters");
+      assert.equal(b.emoji, undefined, "labels replace emoji on this panel");
+    }
+
+    const labels = buttons.map((b) => b.label);
+    assert.deepEqual(labels, [
+      "Previous",
+      "Pause",
+      "Skip",
+      "Stop",
+      "Loop: Off",
+      "Shuffle",
+      "Vol -",
+      "Vol +",
+      "Queue",
+    ]);
+  });
+
+  it("says what the loop and play buttons will do next", async (t) => {
+    const bot = await bootBot();
+    t.after(() => bot.teardown());
+
+    const { makeRawTrack } = await import("./helpers/lavalink.js");
+    const { seedPlayer } = await import("./helpers/bot.js");
+    const player = await seedPlayer(bot, { tracks: [makeRawTrack(), makeRawTrack()] });
+
+    const labelsNow = async () => {
+      const { interaction } = await bot.slash("nowplaying");
+      return interaction.responses
+        .at(-1)
+        .payload.components.flatMap((row) => row.components.map((b) => b.toJSON().label));
+    };
+
+    await player.pause();
+    assert.ok((await labelsNow()).includes("Resume"), "a paused player offers Resume");
+
+    await player.resume();
+    assert.ok((await labelsNow()).includes("Pause"));
+
+    await player.setRepeatMode("queue");
+    assert.ok((await labelsNow()).includes("Loop: Queue"), "the loop button shows its state");
+  });
+
+  it("uses words on the queue pagination row too", async (t) => {
+    const bot = await bootBot();
+    t.after(() => bot.teardown());
+
+    const { makeRawTrack } = await import("./helpers/lavalink.js");
+    const { seedPlayer } = await import("./helpers/bot.js");
+    await seedPlayer(bot, {
+      tracks: Array.from({ length: 30 }, (_, i) => makeRawTrack({ identifier: `p${i}` })),
+    });
+
+    const { interaction } = await bot.slash("queue");
+    const row = interaction.responses.at(-1).payload.components[0];
+    const labels = row.components.map((b) => b.toJSON().label);
+
+    assert.deepEqual(labels, ["First", "Back", "Page 1 of 3", "Next", "Last"]);
+  });
+});
