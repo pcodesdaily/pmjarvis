@@ -240,3 +240,52 @@ describe("choosing a song from /play", () => {
     assert.ok(!payload.components?.length, "a link plays straight away");
   });
 });
+
+describe("how the picker behaves", () => {
+  const menuOf = (interaction) =>
+    interaction.responses
+      .find((entry) => entry.payload?.components?.length)
+      .payload.components[0].components[0].toJSON();
+
+  it("/play submits on a single tap", async (t) => {
+    const bot = await bootBot();
+    t.after(() => bot.teardown());
+
+    bot.lava.queueSearch(
+      searchResponse([makeRawTrack({ title: "A" }), makeRawTrack({ title: "B" }), makeRawTrack({ title: "C" })]),
+    );
+    const { interaction } = await bot.slash("play", { query: "song" });
+    const menu = menuOf(interaction);
+
+    // Discord only submits a select menu immediately when it takes one value.
+    // Anything higher forces the user to click away to confirm.
+    assert.equal(menu.max_values, 1, "/play must be a single-choice menu");
+    assert.equal(menu.min_values, 1);
+    assert.match(menu.placeholder, /Tap a song/);
+  });
+
+  it("/search still allows several, and says how to confirm", async (t) => {
+    const bot = await bootBot();
+    t.after(() => bot.teardown());
+
+    bot.lava.queueSearch(
+      searchResponse(Array.from({ length: 6 }, (_, i) => makeRawTrack({ title: `S${i}` }))),
+    );
+    const { interaction } = await bot.slash("search", { query: "song" });
+    const menu = menuOf(interaction);
+
+    assert.ok(menu.max_values > 1, "/search is for picking several");
+    assert.match(menu.placeholder, /click away/);
+  });
+
+  it("never asks for more choices than there are results", async (t) => {
+    const bot = await bootBot();
+    t.after(() => bot.teardown());
+
+    bot.lava.queueSearch(searchResponse([makeRawTrack({ title: "A" }), makeRawTrack({ title: "B" })]));
+    const { interaction } = await bot.slash("search", { query: "song" });
+    const menu = menuOf(interaction);
+
+    assert.equal(menu.max_values, 2);
+  });
+});

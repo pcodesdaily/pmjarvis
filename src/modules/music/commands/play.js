@@ -106,7 +106,10 @@ export default {
     }
 
     /* ---- several results: let them choose ---- */
-    const picked = await promptTrackChoice(ctx, result.tracks, { title: `Results for "${truncate(query, 60)}"` });
+    const picked = await promptTrackChoice(ctx, result.tracks, {
+      max: 1,
+      title: `Results for "${truncate(query, 60)}"`,
+    });
     if (!picked) return;
 
     const { chosen, selection } = picked;

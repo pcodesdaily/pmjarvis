@@ -16,11 +16,16 @@ export const PICKER_ID = "music:trackpick";
 export async function promptTrackChoice(ctx, tracks, { max = 5, title = "Choose a song" } = {}) {
   const options = tracks.slice(0, 25);
 
+  // A menu that allows more than one choice makes Discord wait for you to click
+  // away before it submits. With a single choice it fires the moment you tap the
+  // song, which is what people expect, so /play uses max: 1.
+  const limit = Math.max(1, Math.min(max, options.length));
+
   const menu = new StringSelectMenuBuilder()
     .setCustomId(PICKER_ID)
-    .setPlaceholder("Pick the one you want")
+    .setPlaceholder(limit === 1 ? "Tap a song to play it" : `Pick up to ${limit}, then click away`)
     .setMinValues(1)
-    .setMaxValues(Math.min(max, options.length))
+    .setMaxValues(limit)
     .addOptions(
       options.map((track, index) => ({
         label: truncate(track.info.title, 100),
@@ -35,7 +40,9 @@ export async function promptTrackChoice(ctx, tracks, { max = 5, title = "Choose 
   const sent = await ctx.reply({
     embeds: [
       info(
-        `Found **${options.length}** results. Pick the one you want, or ignore this and it will disappear.`,
+        limit === 1
+          ? `Found **${options.length}** results. Tap the one you want.`
+          : `Found **${options.length}** results. Pick up to ${limit}, then click away to confirm.`,
         title,
       ),
     ],
