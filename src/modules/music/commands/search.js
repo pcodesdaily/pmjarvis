@@ -11,7 +11,7 @@ import { formatDuration, trackLength, truncate } from "../lib/format.js";
 export default {
   data: new SlashCommandBuilder()
     .setName("search")
-    .setDescription("Search a platform and pick from the top results")
+    .setDescription("Search for a song and choose from the results yourself")
     .addStringOption((option) =>
       option.setName("query").setDescription("What to search for").setRequired(true),
     )

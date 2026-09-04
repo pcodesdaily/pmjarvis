@@ -4,7 +4,7 @@ import { fail, getPlayer, requireDJ, requireSameVoice } from "../lib/guards.js";
 import { trackLink } from "../lib/format.js";
 
 export default {
-  data: new SlashCommandBuilder().setName("previous").setDescription("Play the previous track again"),
+  data: new SlashCommandBuilder().setName("previous").setDescription("Go back to the song that played before this one"),
   aliases: ["prev", "back", "b"],
   category: "Music",
 

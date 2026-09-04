@@ -1,12 +1,37 @@
 import { EmbedBuilder, SlashCommandBuilder } from "discord.js";
 import config from "../../../config.js";
 
+/**
+ * How the command list is laid out. Grouping by what someone is trying to do
+ * reads far better than one alphabetical wall, and the order is the order a new
+ * user meets them in.
+ *
+ * Anything loaded but not listed here still appears, under "More", so a new
+ * command is never silently missing from the help page.
+ */
+const GROUPS = [
+  ["Play music", ["join", "play", "search", "nowplaying"]],
+  ["Controls", ["pause", "resume", "skip", "previous", "seek", "stop"]],
+  ["The queue", ["queue", "shuffle", "loop", "autoplay", "remove", "clear"]],
+  ["Everything else", ["volume", "help", "info", "ping"]],
+];
+
+/** Turns a command's options into `<required>` and `[optional]` hints. */
+function usageFor(command) {
+  const parts = (command.json.options ?? [])
+    .filter((option) => option.required)
+    .map((option) => `<${option.name}>`);
+  return `${config.prefix}${command.name}${parts.length ? ` ${parts.join(" ")}` : ""}`;
+}
+
+const line = (command) => `\`${usageFor(command)}\`\n${command.json.description}`;
+
 export default {
   data: new SlashCommandBuilder()
     .setName("help")
-    .setDescription("List every command, or explain one of them")
+    .setDescription("Show every command and how to use it")
     .addStringOption((option) =>
-      option.setName("command").setDescription("Command to explain").setAutocomplete(true),
+      option.setName("command").setDescription("Explain just one command").setAutocomplete(true),
     ),
 
   aliases: ["commands", "h"],
@@ -25,72 +50,70 @@ export default {
     const { prefix } = config;
     const wanted = (ctx.string("command") ?? "").toLowerCase().replace(/^\//, "");
 
+    /* ---------------- one command in detail ---------------- */
     if (wanted) {
       const name = ctx.client.commands.has(wanted) ? wanted : ctx.client.aliases.get(wanted);
       const command = name ? ctx.client.commands.get(name) : null;
       if (!command) {
-        return ctx.reply({ content: `There is no command called \`${wanted}\`.`, ephemeral: true });
+        return ctx.reply({
+          content: `There is no command called \`${wanted}\`. Type \`${prefix}help\` to see them all.`,
+          ephemeral: true,
+        });
       }
 
       const options = (command.json.options ?? [])
-        .map(
-          (option) =>
-            `\`${option.required ? "<" : "["}${option.name}${option.required ? ">" : "]"}\`: ${option.description}`,
-        )
+        .map((option) => `\`${option.required ? "<" : "["}${option.name}${option.required ? ">" : "]"}\` ${option.description}`)
         .join("\n");
 
-      return ctx.reply({
-        embeds: [
-          new EmbedBuilder()
-            .setColor(config.colors.primary)
-            .setTitle(`${prefix}${command.name}`)
-            .setDescription(command.json.description)
-            .addFields(
-              { name: "How to type it", value: `\`${prefix}${command.name}\` or \`/${command.name}\`` },
-              ...(command.aliases.length
-                ? [{ name: "Other names", value: command.aliases.map((alias) => `\`${alias}\``).join(", ") }]
-                : []),
-              ...(options ? [{ name: "Options", value: options }] : []),
-            )
-            .setFooter({ text: "Anything in <angle brackets> is required. [square brackets] are optional." }),
-        ],
-      });
+      const embed = new EmbedBuilder()
+        .setColor(config.colors.primary)
+        .setTitle(`${prefix}${command.name}`)
+        .setDescription(command.json.description)
+        .addFields({ name: "How to type it", value: `\`${usageFor(command)}\`\nor \`/${command.name}\`` });
+
+      if (options) embed.addFields({ name: "Options", value: options });
+      if (command.aliases.length) {
+        embed.addFields({
+          name: "Short forms",
+          value: command.aliases.map((alias) => `\`${prefix}${alias}\``).join(", "),
+        });
+      }
+      embed.setFooter({ text: "<angle brackets> are required, [square brackets] are optional" });
+
+      return ctx.reply({ embeds: [embed] });
     }
 
-    const grouped = new Map();
-    for (const command of ctx.client.commands.values()) {
-      const category = command.category ?? "Other";
-      if (!grouped.has(category)) grouped.set(category, []);
-      grouped.get(category).push(command.name);
-    }
-
+    /* ---------------- the full list ---------------- */
+    const remaining = new Map(ctx.client.commands);
     const embed = new EmbedBuilder()
       .setColor(config.colors.primary)
       .setTitle(`${config.brand.name} commands`)
       .setDescription(
         [
-          `Every command works two ways. Type \`${prefix}play\` or use the slash command \`/play\`. Both do the same thing.`,
-          "",
-          "**New here?**",
+          "**How to play a song**",
           "1. Join a voice channel",
-          `2. Type \`${prefix}join\``,
-          `3. Type \`${prefix}play song name\``,
+          `2. Type \`${prefix}join\` so the bot joins you`,
+          `3. Type \`${prefix}play\` and the song name, for example:`,
+          `\`\`\`${prefix}play tum hi ho arijit singh\`\`\``,
+          "The bot starts playing. Ask for another song at any time and it goes",
+          "into the queue behind the current one.",
+          "",
+          `Every command also works as a slash command, so \`/play\` is the same as \`${prefix}play\`.`,
         ].join("\n"),
-      )
-      .setFooter({
-        text: `Prefix: ${prefix}  ·  Type ${prefix}help <command> to learn about one command`,
-      });
+      );
 
-    for (const [category, names] of [...grouped].sort()) {
-      embed.addFields({
-        name: `${category} (${names.length})`,
-        value: names
-          .sort()
-          .map((name) => `\`${name}\``)
-          .join(" "),
-      });
+    for (const [title, names] of GROUPS) {
+      const commands = names.map((name) => remaining.get(name)).filter(Boolean);
+      for (const command of commands) remaining.delete(command.name);
+      if (commands.length) embed.addFields({ name: title, value: commands.map(line).join("\n\n") });
     }
 
+    // Anything new that has not been placed in a group yet.
+    if (remaining.size) {
+      embed.addFields({ name: "More", value: [...remaining.values()].map(line).join("\n\n") });
+    }
+
+    embed.setFooter({ text: `Type ${prefix}help <command> to learn about one command` });
     return ctx.reply({ embeds: [embed] });
   },
 };

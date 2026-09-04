@@ -12,7 +12,7 @@ const LABELS = {
 export default {
   data: new SlashCommandBuilder()
     .setName("loop")
-    .setDescription("Set the repeat mode")
+    .setDescription("Repeat the current song, the whole queue, or nothing")
     .addStringOption((option) =>
       option
         .setName("mode")

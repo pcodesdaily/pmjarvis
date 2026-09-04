@@ -7,7 +7,7 @@ import { trackLink } from "../lib/format.js";
 export default {
   data: new SlashCommandBuilder()
     .setName("skip")
-    .setDescription("Skip the current track, or jump ahead in the queue")
+    .setDescription("Play the next song, or jump ahead in the queue")
     .addIntegerOption((option) =>
       option.setName("to").setDescription("Skip straight to this queue position").setMinValue(1),
     ),

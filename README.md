@@ -26,7 +26,7 @@ Autoplay is on by default: when the queue runs out the bot keeps going with
 similar songs, so the music does not just stop.
 
 Plus a live now-playing panel with buttons for previous, play/pause, skip, stop,
-loop, shuffle, autoplay and volume.
+loop, shuffle, autoplay and the queue.
 
 Every command works two ways: as a slash command (`/play`) and as a text command
 (`pm!play`, or by mentioning the bot). Both run the exact same code.
@@ -228,7 +228,7 @@ code paths work.
 | Guards | not in voice, wrong channel, missing permissions, full channel, DJ rules |
 | Robustness | 400-character titles, markdown injection, missing artwork, 500-track queues, every Discord embed and autocomplete limit |
 | Config | `application.yml` parses, the plugin JAR resolves, every env placeholder is wired through compose and documented |
-| Onboarding | `/info` content, the welcome message and its channel fallback, the `pm!` prefix |
+| Onboarding | `/info` content, the welcome message and its channel fallback, the `pm!` prefix, and that every command appears in `/help` |
 | Footprint | dependency count, plugin count, the pinned command set, image pruning, log caps, memory ceilings — so the size gains cannot silently regress |
 
 The config suite reaches the network to confirm the pinned Lavalink plugin

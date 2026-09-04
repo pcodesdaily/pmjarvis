@@ -169,7 +169,7 @@ describe("button panel", () => {
     const rows = interaction.responses.at(-1).payload.components;
     const buttons = rows.flatMap((row) => row.components.map((b) => b.toJSON()));
 
-    assert.equal(buttons.length, 9);
+    assert.equal(buttons.length, 8);
     for (const b of buttons) {
       assert.ok(b.label, `every button needs a label: ${b.custom_id}`);
       assert.ok(b.label.length <= 80, "Discord caps button labels at 80 characters");
@@ -185,8 +185,7 @@ describe("button panel", () => {
       "Loop: Off",
       "Shuffle",
       "Autoplay: On",
-      "Vol -",
-      "Vol +",
+      "Queue",
     ]);
   });
 

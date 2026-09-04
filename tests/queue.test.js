@@ -251,8 +251,7 @@ describe("/nowplaying", () => {
       "music:loop",
       "music:shuffle",
       "music:autoplay",
-      "music:voldown",
-      "music:volup",
+      "music:queue",
     ]);
   });
 

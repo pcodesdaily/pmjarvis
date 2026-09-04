@@ -400,15 +400,36 @@ describe("command registration payload", () => {
 });
 
 describe("help and status", () => {
-  it("lists every command grouped by category", async (t) => {
+  it("lists every single loaded command, with how to type it", async (t) => {
     const bot = await bootBot();
     t.after(() => bot.teardown());
 
     const { interaction, text } = await bot.slash("help");
-    assert.match(text, /Music/);
-    assert.match(text, /General/);
-    assert.match(text, /play/);
+
+    // The whole point of the page: nothing is missing. If a command is added
+    // and not placed in a group, it still has to show up under "More".
+    for (const name of bot.client.commands.keys()) {
+      assert.ok(text.includes(`pm!${name}`), `${name} is missing from help`);
+    }
+
+    // And each one is described, not just named.
+    for (const command of bot.client.commands.values()) {
+      const description = command.json.description;
+      assert.ok(text.includes(description), `no description shown for ${command.name}`);
+    }
+
     for (const embed of embedsOf(interaction)) assertEmbedFits(embed, "/help");
+  });
+
+  it("opens with instructions a first-time user can follow", async (t) => {
+    const bot = await bootBot();
+    t.after(() => bot.teardown());
+
+    const { text } = await bot.slash("help");
+    assert.match(text, /How to play a song/);
+    assert.match(text, /Join a voice channel/);
+    assert.match(text, /pm!play tum hi ho/);
+    assert.match(text, /slash command/);
   });
 
   it("explains a single command, including by alias", async (t) => {

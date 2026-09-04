@@ -7,11 +7,11 @@ import { truncate } from "../lib/format.js";
 export default {
   data: new SlashCommandBuilder()
     .setName("play")
-    .setDescription("Play a song or playlist by name or link from any supported platform")
+    .setDescription("Play a song, or add it to the queue if something is already playing")
     .addStringOption((option) =>
       option
         .setName("query")
-        .setDescription("Song title, artist, or a link (YouTube, Spotify, SoundCloud, Apple Music, Deezer, …)")
+        .setDescription("A song name, or a SoundCloud or Bandcamp link")
         .setRequired(true)
         .setAutocomplete(true),
     )
