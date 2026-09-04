@@ -167,22 +167,68 @@ healthy before it connects.
 register instantly; global commands can take up to an hour to appear. Clear it
 once you are happy and restart to publish globally.
 
+### Updating
+
+One command, every time:
+
+```bash
+cd ~/pmjarvis && git pull && docker compose up -d --build --force-recreate
+```
+
+`git pull` fetches the new code, `--build` rebuilds the bot image, and
+`--force-recreate` restarts both containers. That last flag matters:
+`lavalink/application.yml` is mounted into the container and only read at
+startup, so without it a config change is pulled but never applied.
+
+Your `.env` is never touched by a pull, because it is not in the repository.
+If an update adds a new setting it will appear in `.env.example`, so after
+pulling you can check for anything you are missing:
+
+```bash
+diff <(grep -oE '^[A-Z0-9_]+' .env.example | sort) <(grep -oE '^[A-Z0-9_]+' .env | sort)
+```
+
+Lines starting with `<` are new settings you do not have yet. Add them to
+`.env` and run the update command again.
+
+Then confirm it came back up:
+
+```bash
+docker compose ps && docker compose logs bot --tail 15
+```
+
+You want `lavalink` healthy, plus `Logged in as ...` and
+`Audio node "main" connected` from the bot.
+
 ### Everyday operations
+
+Follow the bot's log live:
 
 ```bash
 docker compose logs -f bot
 ```
 
+Restart just the bot, without touching Lavalink:
+
 ```bash
-docker compose up -d --build bot
+docker compose restart bot
 ```
+
+Stop everything:
 
 ```bash
 docker compose down
 ```
 
-Lavalink is only reachable on the private compose network — no audio port is
-exposed to the internet, and the password never leaves the host.
+Reclaim disk from old images and build cache:
+
+```bash
+docker image prune -f && docker builder prune -f
+```
+
+Lavalink is only reachable on the private compose network, so no audio port is
+exposed to the internet and the password never leaves the host. Every command
+here is scoped to this project and leaves other containers on the machine alone.
 
 ## Configuration
 
